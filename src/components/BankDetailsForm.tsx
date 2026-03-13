@@ -66,6 +66,7 @@ export function BankDetailsForm({
   const type = bankCountryIso2 ? getBankCountryType(bankCountryIso2) : "sepa"
   const previousTypeRef = React.useRef(type)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we intentionally reset when international mode or form changes
   useEffect(() => {
     setSkipValidation(false)
     setAccountValidationFailed(false)

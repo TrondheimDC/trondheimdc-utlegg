@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
+import { PDFDocument, PDFImage, rgb, StandardFonts } from "pdf-lib"
 import { z } from "zod"
 import {
   createExpenseSchemas,
@@ -661,7 +661,7 @@ const imageFileToPdf = async (file: File): Promise<Uint8Array> => {
   const page = pdfDoc.addPage([595, 842]) // A4 size in points
 
   const imageBytes = await file.arrayBuffer()
-  let image
+  let image: PDFImage
 
   if (file.type === "image/jpeg") {
     image = await pdfDoc.embedJpg(imageBytes)

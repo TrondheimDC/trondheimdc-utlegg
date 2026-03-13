@@ -54,6 +54,7 @@ function useUncontrolledState<T>({
   const prevValueRef = React.useRef(value)
   const handleChange = useCallbackRef(onChange)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: follow upstream shadcn/radix pattern
   React.useEffect(() => {
     if (prevValueRef.current !== value) {
       handleChange(value as T)

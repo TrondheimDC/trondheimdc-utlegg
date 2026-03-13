@@ -9,6 +9,7 @@ export function BankLogo({
 }) {
   const [imageError, setImageError] = React.useState(false)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we intentionally reset when bank changes
   React.useEffect(() => {
     setImageError(false)
   }, [bank?.identifier])

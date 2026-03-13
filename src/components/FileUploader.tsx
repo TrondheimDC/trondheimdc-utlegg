@@ -495,6 +495,7 @@ export function FileUploader(props: FileUploaderProps) {
         <div className="flex flex-col gap-2.5">
           {files?.map((file, index) => (
             <FileCard
+              // biome-ignore lint/suspicious/noArrayIndexKey: small append/remove list, index key is acceptable and matches onRemove
               key={index}
               file={file}
               onRemove={() => onRemove(index)}
