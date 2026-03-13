@@ -16,7 +16,7 @@
   }
 
   a {
-    @apply text-jz-salmon outline-none hover:text-[#fec503] focus:text-[#fec503] active:text-[#fec503];
+    @apply outline-none hover:text-[#fec503] focus:text-[#fec503] active:text-[#fec503];
   }
 
   h1, h2, h3, h4, h5, h6 {

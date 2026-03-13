@@ -79,7 +79,7 @@ const CurrencyDropdownComponent = (
     }
 
     const currencyMap = new Map<string, Currency>()
-    allCurrenciesData.all.forEach((currency: Currency) => {
+    for (const currency of allCurrenciesData.all as Currency[]) {
       if (
         currency.code &&
         currency.name &&
@@ -95,7 +95,7 @@ const CurrencyDropdownComponent = (
         }
         currencyMap.set(currency.code, entry)
       }
-    })
+    }
 
     return Array.from(currencyMap.values())
   }, [currencies, norgesBankCodes])

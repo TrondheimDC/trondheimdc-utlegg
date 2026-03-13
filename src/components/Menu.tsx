@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { useTranslation } from "react-i18next"
 
@@ -17,10 +18,12 @@ export const Menu = () => {
     >
       <div className="flex h-full w-full items-center justify-between px-[29px] py-[8px]">
         <Link href="/" className="flex items-center">
-          <img
+          <Image
             src="/img/logos/TDC_white.svg"
             alt="TrondheimDC"
-            className="h-[30px] w-auto"
+            width={74}
+            height={30}
+            priority
           />
         </Link>
 

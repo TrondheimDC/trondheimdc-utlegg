@@ -371,9 +371,9 @@ export async function generatePDF({
     exchange: "Valuta / kurs",
     amount: "Beløp (NOK)",
   }
-  ;(
-    Object.keys(rebalancedColumns) as Array<keyof typeof rebalancedColumns>
-  ).forEach((key) => {
+  for (const key of Object.keys(rebalancedColumns) as Array<
+    keyof typeof rebalancedColumns
+  >) {
     coverPage.drawText(headerTexts[key], {
       x: rebalancedColumns[key].x,
       y: headerTextY,
@@ -381,7 +381,7 @@ export async function generatePDF({
       font,
       color: jzDark,
     })
-  })
+  }
 
   const dataFontSize = 10
   const dataLineHeight = 12

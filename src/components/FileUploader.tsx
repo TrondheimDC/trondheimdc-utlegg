@@ -242,6 +242,7 @@ function CropDialog({
                     }
                     className="flex max-h-full max-w-full items-center justify-center"
                   >
+                    {/* biome-ignore lint/performance/noImgElement: cropping requires direct access to underlying img element */}
                     <img
                       ref={imgRef}
                       src={imgSrc}
@@ -371,6 +372,7 @@ export function FileUploader(props: FileUploaderProps) {
       setFiles(updatedFiles)
 
       if (rejectedFiles.length > 0) {
+        // biome-ignore lint/complexity/noForEach: simple iteration over small rejection list
         rejectedFiles.forEach(({ file }) => {
           setErrorMessage(
             t("fileUploader.errors.fileRejected", { fileName: file.name }),
@@ -404,6 +406,7 @@ export function FileUploader(props: FileUploaderProps) {
 
   React.useEffect(() => {
     return () => {
+      // biome-ignore lint/complexity/noForEach: cleanup side effects on each file
       files?.forEach((file) => {
         if ("preview" in file) {
           URL.revokeObjectURL(file.preview as string)
@@ -505,7 +508,7 @@ export function FileUploader(props: FileUploaderProps) {
         </div>
       ) : null}
       <CropDialog
-        file={cropDialogFile!}
+        file={cropDialogFile}
         isOpen={!!cropDialogFile}
         onOpenChange={(open) => !open && setCropDialogFile(null)}
         onCropComplete={handleCropComplete}
@@ -624,6 +627,7 @@ function ImageSelectionDialog({
                     aspect={undefined}
                     className="flex max-h-full max-w-full items-center justify-center"
                   >
+                    {/* biome-ignore lint/performance/noImgElement: selection requires direct img element for canvas operations */}
                     <img
                       ref={imgRef}
                       src={imgSrc}

@@ -148,6 +148,7 @@ function searchToQueryRecord(
 }
 
 type ExpenseAmountInputProps = {
+  // biome-ignore lint/suspicious/noExplicitAny: react-hook-form Control generic is provided by caller
   control: Control<any>
   name: `expenses.${number}.amount`
   currencyName: `expenses.${number}.currency`
@@ -273,7 +274,7 @@ export default function ExpensePage() {
 
   const { t, i18n } = useTranslation("common")
 
-  const { formSchema } = createExpenseSchemas(t, i18n.language)
+  const { formSchema } = createExpenseSchemas(t)
   type FormValues = z.infer<typeof formSchema>
 
   const [isLoading, setIsLoading] = useState(false)

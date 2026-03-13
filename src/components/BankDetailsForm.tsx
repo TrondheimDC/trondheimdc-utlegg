@@ -30,6 +30,7 @@ import {
 import { Country, CountryDropdown } from "./ui/country-dropdown"
 
 type BankDetailsFormProps = {
+  // biome-ignore lint/suspicious/noExplicitAny: generic form type is provided by caller
   form: UseFormReturn<any>
   t: (key: string, options?: Record<string, unknown>) => string
   language: string

@@ -35,7 +35,7 @@ export function buildIBAN(countryCode: string, bban: string): string {
   const cleanBban = bban.replace(/\s/g, "")
   if (cc.length !== 2 || !/^[A-Z]{2}$/.test(cc) || !cleanBban) return ""
   return (
-    composeIBAN({ countryCode: cc, bban: cleanBban }) ?? cc + "00" + cleanBban
+    composeIBAN({ countryCode: cc, bban: cleanBban }) ?? `${cc}00${cleanBban}`
   )
 }
 
@@ -57,10 +57,7 @@ export function formatNorwegianBBANForDisplay(bban: string): string {
 }
 
 // Create schemas with localized error messages
-export const createExpenseSchemas = (
-  t: (key: string) => string,
-  language: string = "no",
-) => {
+export const createExpenseSchemas = (t: (key: string) => string) => {
   const expenseItemSchema = z.object({
     description: z
       .string({
@@ -362,14 +359,18 @@ export const validateNorwegianBBAN = (accountNumber: string): boolean => {
   if (accountNumber.length !== 11) return false
 
   const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
+
   const sum = accountNumber
     .slice(0, 10)
     .split("")
-    .map((c) => parseInt(c))
-    .reduce((acc, digit, index) => acc + digit * weights[index]!, 0)
+    .map((c) => parseInt(c, 10))
+    .reduce((acc, digit, index) => {
+      const weight = weights[index] ?? 0
+      return acc + digit * weight
+    }, 0)
 
   const checkDigit = (11 - (sum % 11)) % 11
-  return checkDigit === parseInt(accountNumber.charAt(10))
+  return checkDigit === parseInt(accountNumber.charAt(10), 10)
 }
 
 /** Validates an IBAN (format, length, check digits) via ibantools. */
@@ -393,9 +394,10 @@ export const validateABARoutingNumber = (routing: string): boolean => {
   if (digits.length !== 9) return false
 
   const weights = [3, 7, 1, 3, 7, 1, 3, 7, 1]
-  const sum = digits
-    .split("")
-    .reduce((acc, d, i) => acc + parseInt(d) * weights[i]!, 0)
+  const sum = digits.split("").reduce((acc, d, i) => {
+    const weight = weights[i] ?? 0
+    return acc + parseInt(d, 10) * weight
+  }, 0)
 
   return sum % 10 === 0
 }
@@ -446,12 +448,12 @@ async function fetchExchangeRateData(
           )
           if (unitMultAttr?.values?.[0]?.id) {
             const unitMultValue = parseInt(unitMultAttr.values[0].id, 10)
-            if (!isNaN(unitMultValue)) {
+            if (!Number.isNaN(unitMultValue)) {
               unitMultiplier = 10 ** unitMultValue
             }
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Could not parse UNIT_MULT from API response; fall back to default 1
       }
 
@@ -459,7 +461,7 @@ async function fetchExchangeRateData(
         responseData.data.dataSets[0].series["0:0:0:0"].observations
 
       const observationKeys = Object.keys(observations).sort(
-        (a, b) => parseInt(a) - parseInt(b),
+        (a, b) => parseInt(a, 10) - parseInt(b, 10),
       )
 
       if (observationKeys.length === 0) {
@@ -476,13 +478,13 @@ async function fetchExchangeRateData(
       const rateStr = observations[lastKey][0]
       const rate = Number(rateStr)
 
-      if (isNaN(rate) || !isFinite(rate)) {
+      if (Number.isNaN(rate) || !Number.isFinite(rate)) {
         // Invalid exchange rate value
         return null
       }
 
       return { rate, unitMultiplier }
-    } catch (e) {
+    } catch (_e) {
       // Could not extract rate from dataset
     }
 

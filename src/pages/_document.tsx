@@ -9,17 +9,17 @@ class CustomDocument extends Document {
       <Html lang={currentLocale}>
         <Head>
           <link
-            href="https://fonts.googleapis.com/css?family=Montserrat:400,700"
+            href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap"
             rel="stylesheet"
             type="text/css"
           />
           <link
-            href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic"
+            href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic&display=swap"
             rel="stylesheet"
             type="text/css"
           />
           <link
-            href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700"
+            href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700&display=swap"
             rel="stylesheet"
             type="text/css"
           />
