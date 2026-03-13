@@ -1,30 +1,28 @@
 "use client"
 
-import * as React from "react"
+import { FileText, Upload, X, ZoomIn, ZoomOut } from "lucide-react"
 import NextImage from "next/image"
-import { FileText, Upload, X } from "lucide-react"
+import * as React from "react"
 import Dropzone, {
   type DropzoneProps,
   type FileRejection,
 } from "react-dropzone"
+import ReactCrop, {
+  type Crop,
+  centerCrop,
+  makeAspectCrop,
+} from "react-image-crop"
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
-import { cn, formatBytes } from "@/lib/utils"
-import { useControllableState } from "@/hooks/use-controllable-state"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ZoomIn, ZoomOut } from "lucide-react"
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
-import ReactCrop, {
-  type Crop,
-  centerCrop,
-  makeAspectCrop,
-} from "react-image-crop"
+import { useControllableState } from "@/hooks/use-controllable-state"
+import { cn, formatBytes } from "@/lib/utils"
 import "react-image-crop/dist/ReactCrop.css"
 import { useTranslation } from "react-i18next"
 
@@ -305,9 +303,7 @@ function CropDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("fileUploader.crop.cancel")}
           </Button>
-          <Button onClick={cropImage}>
-            {t("fileUploader.crop.confirm")}
-          </Button>
+          <Button onClick={cropImage}>{t("fileUploader.crop.confirm")}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -715,7 +711,10 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
           <FilePreview file={file} />
         ) : (
           <div className="bg-muted relative aspect-square size-14 shrink-0 overflow-hidden rounded-md border flex items-center justify-center">
-            <FileText className="text-muted-foreground size-5" aria-hidden="true" />
+            <FileText
+              className="text-muted-foreground size-5"
+              aria-hidden="true"
+            />
           </div>
         )}
         <Button
@@ -729,9 +728,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
           }}
         >
           <X className="size-2.5" aria-hidden="true" />
-          <span className="sr-only">
-            {t("fileUploader.card.removeFile")}
-          </span>
+          <span className="sr-only">{t("fileUploader.card.removeFile")}</span>
         </Button>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -743,7 +740,9 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
             {formatBytes(file.size)}
           </p>
         </div>
-        {progress !== undefined && <Progress value={progress} className="h-1" />}
+        {progress !== undefined && (
+          <Progress value={progress} className="h-1" />
+        )}
       </div>
 
       <ImageSelectionDialog

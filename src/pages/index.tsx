@@ -1,18 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, useFieldArray, useWatch, type Control } from "react-hook-form"
-import { Input } from "@/components/ui/input"
-import { useState } from "react"
-import React from "react"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { generatePDF } from "@/lib/pdf"
-import { CalendarIcon, Trash2, Mail, Plus, Copy, Check } from "lucide-react"
-import { createExpenseSchemas } from "@/lib/expense"
+import { getSymbolFromCurrency } from "country-data-list"
+import { format } from "date-fns"
+import { nb } from "date-fns/locale"
+import { CalendarIcon, Check, Copy, Mail, Plus, Trash2 } from "lucide-react"
+import React, { useState } from "react"
+import { type Control, useFieldArray, useForm, useWatch } from "react-hook-form"
+import { useTranslation } from "react-i18next"
+import { z } from "zod"
 import { BankDetailsForm } from "@/components/BankDetailsForm"
 import { FileUploader } from "@/components/FileUploader"
-import { format } from "date-fns"
-import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { Country, CountryDropdown } from "@/components/ui/country-dropdown"
+import { CurrencyDropdown } from "@/components/ui/currency-dropdown"
 import {
   Form,
   FormControl,
@@ -22,21 +22,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { useTranslation } from "react-i18next"
-import { nb } from "date-fns/locale"
-import { Country, CountryDropdown } from "@/components/ui/country-dropdown"
-import { CurrencyDropdown } from "@/components/ui/currency-dropdown"
-import { getSymbolFromCurrency } from "country-data-list"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   findCountryByCodeOrName,
   getDisplayLocaleFromCountry,
 } from "@/lib/country"
+import { createExpenseSchemas } from "@/lib/expense"
+import { generatePDF } from "@/lib/pdf"
+import { cn } from "@/lib/utils"
 
 const LOGO_URL = "/img/logos/TDC_white.png"
 let cachedLogoBytes: ArrayBuffer | undefined | null = null
@@ -865,6 +864,7 @@ Vedlagt er en PDF-fil med utleggene.
 
 Med vennlig hilsen,
 ${form.getValues("name")}`)}`}
+                rel="noopener"
               >
                 <Mail className="h-4 w-4" />
                 {t("expense.sendEmail")}

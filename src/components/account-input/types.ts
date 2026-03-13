@@ -1,5 +1,5 @@
-import type { Input } from "@/components/ui/input"
 import type React from "react"
+import type { Input } from "@/components/ui/input"
 
 export type AccountValidationResult = {
   isValid: boolean

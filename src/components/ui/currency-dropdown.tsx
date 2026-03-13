@@ -1,8 +1,10 @@
 "use client"
 
-import React, { useCallback, useState, forwardRef, useEffect } from "react"
+import { currencies as allCurrenciesData } from "country-data-list"
+// assets
+import { Banknote, CheckIcon, ChevronDown } from "lucide-react"
+import React, { forwardRef, useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-
 // shadcn
 import {
   Command,
@@ -17,16 +19,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-
-// utils
-import { cn } from "@/lib/utils"
-
 // data
 import { currencies as norgesBankCurrencies } from "@/data/currencies"
-import { currencies as allCurrenciesData } from "country-data-list"
-
-// assets
-import { ChevronDown, CheckIcon, Banknote } from "lucide-react"
+// utils
+import { cn } from "@/lib/utils"
 
 export interface Currency {
   code: string
@@ -110,9 +106,7 @@ const CurrencyDropdownComponent = (
   const getCurrencyName = useCallback(
     (currency: Currency): string => {
       try {
-        return (
-          currencyDisplayNames.of(currency.code) ?? currency.name
-        )
+        return currencyDisplayNames.of(currency.code) ?? currency.name
       } catch {
         return currency.name
       }

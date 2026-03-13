@@ -1,11 +1,11 @@
-import { z } from "zod"
 import {
   composeIBAN,
   countrySpecs,
-  isValidIBAN,
-  isValidBIC,
   electronicFormatIBAN,
+  isValidBIC,
+  isValidIBAN,
 } from "ibantools"
+import { z } from "zod"
 
 /**
  * Classify bank country for form flow: SEPA (IBAN), US (ABA + SWIFT etc.), or Other.
@@ -34,7 +34,9 @@ export function buildIBAN(countryCode: string, bban: string): string {
   const cc = countryCode.toUpperCase().replace(/\s/g, "")
   const cleanBban = bban.replace(/\s/g, "")
   if (cc.length !== 2 || !/^[A-Z]{2}$/.test(cc) || !cleanBban) return ""
-  return composeIBAN({ countryCode: cc, bban: cleanBban }) ?? cc + "00" + cleanBban
+  return (
+    composeIBAN({ countryCode: cc, bban: cleanBban }) ?? cc + "00" + cleanBban
+  )
 }
 
 /** IBAN display format: groups of 4 characters, uppercase (same as IbanAccountInput). */
@@ -445,7 +447,7 @@ async function fetchExchangeRateData(
           if (unitMultAttr?.values?.[0]?.id) {
             const unitMultValue = parseInt(unitMultAttr.values[0].id, 10)
             if (!isNaN(unitMultValue)) {
-              unitMultiplier = Math.pow(10, unitMultValue)
+              unitMultiplier = 10 ** unitMultValue
             }
           }
         }

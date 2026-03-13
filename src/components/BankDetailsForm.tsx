@@ -2,7 +2,11 @@
 
 import React, { useEffect, useState } from "react"
 import { UseFormReturn, useWatch } from "react-hook-form"
-import { Input } from "@/components/ui/input"
+import {
+  type AccountValidationResult,
+  IbanAccountInput,
+  NorwegianAccountInput,
+} from "@/components/account-input"
 import {
   FormControl,
   FormField,
@@ -10,16 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  IbanAccountInput,
-  NorwegianAccountInput,
-  type AccountValidationResult,
-} from "@/components/account-input"
-import {
-  getBankCountryType,
-  validateABARoutingNumber,
-  validateBIC,
-} from "@/lib/expense"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -27,6 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  getBankCountryType,
+  validateABARoutingNumber,
+  validateBIC,
+} from "@/lib/expense"
 import { Country, CountryDropdown } from "./ui/country-dropdown"
 
 type BankDetailsFormProps = {
@@ -63,9 +63,7 @@ export function BankDetailsForm({
     name: "bankAccountNumber",
   })
 
-  const type = bankCountryIso2
-    ? getBankCountryType(bankCountryIso2)
-    : "sepa"
+  const type = bankCountryIso2 ? getBankCountryType(bankCountryIso2) : "sepa"
   const previousTypeRef = React.useRef(type)
 
   useEffect(() => {
@@ -125,7 +123,11 @@ export function BankDetailsForm({
 
   const getIbanErrorMessage = React.useCallback(
     (result: AccountValidationResult) => {
-      if (result.errorType === "length" && result.expectedLength != null && result.actualLength != null) {
+      if (
+        result.errorType === "length" &&
+        result.expectedLength != null &&
+        result.actualLength != null
+      ) {
         return bankCountryName
           ? t("expense.invalidIbanLength", {
               expectedLength: result.expectedLength,
@@ -257,13 +259,13 @@ export function BankDetailsForm({
 
   const skipValidationUi = validationFailed ? (
     <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-gray-500">
-        <input
-          type="checkbox"
-          checked={skipValidation}
-          onChange={(e) => handleSkipToggle(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300"
-        />
-        {t("expense.skipValidationLabel")}
+      <input
+        type="checkbox"
+        checked={skipValidation}
+        onChange={(e) => handleSkipToggle(e.target.checked)}
+        className="h-4 w-4 rounded border-gray-300"
+      />
+      {t("expense.skipValidationLabel")}
     </label>
   ) : null
 
@@ -380,7 +382,7 @@ export function BankDetailsForm({
                   <FormControl>
                     <Input
                       {...field}
-                    placeholder={t("expense.bankRoutingNumberPlaceholder")}
+                      placeholder={t("expense.bankRoutingNumberPlaceholder")}
                       inputMode="numeric"
                       onBlur={() => {
                         field.onBlur()
@@ -389,9 +391,7 @@ export function BankDetailsForm({
                         if (skipValidation) return
                         if (digits && !validateABARoutingNumber(digits)) {
                           form.setError("bankRoutingNumber", {
-                            message: t(
-                              "expense.errors.invalidRoutingNumber",
-                            ),
+                            message: t("expense.errors.invalidRoutingNumber"),
                           })
                           setOtherValidationFailed(true)
                         } else {
@@ -414,7 +414,7 @@ export function BankDetailsForm({
                   <FormControl>
                     <Input
                       {...field}
-                    placeholder={t("expense.bankAccountNumberUsPlaceholder")}
+                      placeholder={t("expense.bankAccountNumberUsPlaceholder")}
                       onBlur={() => {
                         field.onBlur()
                         const trimmed = field.value.trim()

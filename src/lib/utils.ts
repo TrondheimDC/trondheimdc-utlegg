@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 /**
  * Formats a number as currency with proper locale support
- * 
+ *
  * @param amount The amount to format
  * @param locale The locale to use for formatting (defaults to Norwegian)
  * @param options Additional Intl.NumberFormat options
@@ -15,7 +15,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatCurrency(
   amount: number,
   locale: string = "nb-NO",
-  options: Intl.NumberFormatOptions = {}
+  options: Intl.NumberFormatOptions = {},
 ): string {
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
@@ -23,7 +23,6 @@ export function formatCurrency(
     ...options,
   }).format(amount)
 }
-
 
 export function formatBytes(
   bytes: number,
@@ -38,7 +37,7 @@ export function formatBytes(
   const accurateSizes = ["Bytes", "KiB", "MiB", "GiB", "TiB"]
   if (bytes === 0) return "0 Byte"
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return `${(bytes / Math.pow(1024, i)).toFixed(decimals)} ${
+  return `${(bytes / 1024 ** i).toFixed(decimals)} ${
     sizeType === "accurate"
       ? (accurateSizes[i] ?? "Bytes")
       : (sizes[i] ?? "Bytes")

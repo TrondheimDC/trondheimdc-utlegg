@@ -1,9 +1,8 @@
 import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
-
+import enCommon from "../public/locales/en/common.json"
 // Import translation resources directly. These are bundled at build time.
 import noCommon from "../public/locales/no/common.json"
-import enCommon from "../public/locales/en/common.json"
 
 if (!i18n.isInitialized) {
   i18n.use(initReactI18next).init({
@@ -23,4 +22,3 @@ if (!i18n.isInitialized) {
 }
 
 export default i18n
-

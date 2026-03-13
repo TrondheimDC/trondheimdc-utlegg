@@ -1,13 +1,13 @@
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
+import { z } from "zod"
 import {
   createExpenseSchemas,
   formatIBANForDisplay,
   formatNorwegianBBANForDisplay,
   getBankCountryType,
 } from "@/lib/expense"
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
-import { z } from "zod"
-import { formatCurrency } from "./utils"
 import { convertToNOK, getExchangeRate } from "./expense"
+import { formatCurrency } from "./utils"
 
 function bankDetailsLines(
   residesInNorway: boolean,
@@ -39,9 +39,7 @@ function bankDetailsLines(
         label: "IBAN:",
         value: formatIBANForDisplay(bankIban || ""),
       },
-      ...(bankSwiftBic
-        ? [{ label: "SWIFT/BIC:", value: bankSwiftBic }]
-        : []),
+      ...(bankSwiftBic ? [{ label: "SWIFT/BIC:", value: bankSwiftBic }] : []),
     ]
   }
   if (type === "us") {
@@ -329,7 +327,8 @@ export async function generatePDF({
 
   // Add expense items table (position below variable-length bank details)
   const gapAboveTable = 36
-  const tableTopY = infoStartY - expandedInfoLines.length * lineHeight - gapAboveTable
+  const tableTopY =
+    infoStartY - expandedInfoLines.length * lineHeight - gapAboveTable
   const usableWidth = pageWidth - 2 * margin
 
   // Separator line above table
@@ -372,17 +371,17 @@ export async function generatePDF({
     exchange: "Valuta / kurs",
     amount: "Beløp (NOK)",
   }
-    ; (
-      Object.keys(rebalancedColumns) as Array<keyof typeof rebalancedColumns>
-    ).forEach((key) => {
-      coverPage.drawText(headerTexts[key], {
-        x: rebalancedColumns[key].x,
-        y: headerTextY,
-        size: 11,
-        font,
-        color: jzDark,
-      })
+  ;(
+    Object.keys(rebalancedColumns) as Array<keyof typeof rebalancedColumns>
+  ).forEach((key) => {
+    coverPage.drawText(headerTexts[key], {
+      x: rebalancedColumns[key].x,
+      y: headerTextY,
+      size: 11,
+      font,
+      color: jzDark,
     })
+  })
 
   const dataFontSize = 10
   const dataLineHeight = 12
@@ -425,9 +424,9 @@ export async function generatePDF({
       exchangeText =
         exchangeRate !== null
           ? `${base} @ ${formatCurrency(exchangeRate, "nb-NO", {
-            minimumFractionDigits: 4,
-            maximumFractionDigits: 4,
-          })}`
+              minimumFractionDigits: 4,
+              maximumFractionDigits: 4,
+            })}`
           : base
     }
 
@@ -442,7 +441,8 @@ export async function generatePDF({
 
     const normalizedDescriptionLines =
       descriptionLines.length > 0 ? descriptionLines : [""]
-    const normalizedExchangeLines = exchangeLines.length > 0 ? exchangeLines : [""]
+    const normalizedExchangeLines =
+      exchangeLines.length > 0 ? exchangeLines : [""]
     const lineCount = Math.max(
       normalizedDescriptionLines.length,
       normalizedExchangeLines.length,
@@ -568,7 +568,10 @@ export async function generatePDF({
     color: jzDark,
   })
   coverPage.drawText(formattedTotalAmount, {
-    x: rebalancedColumns.amount.x + rebalancedColumns.amount.width - totalAmountWidth,
+    x:
+      rebalancedColumns.amount.x +
+      rebalancedColumns.amount.width -
+      totalAmountWidth,
     y: totalBaselineY,
     size: 12,
     font,
@@ -590,7 +593,10 @@ export async function generatePDF({
     color: borderGray,
   })
   coverPage.drawText("TrondheimDC · Utleggsrapport", {
-    x: pageWidth - margin - regularFont.widthOfTextAtSize("TrondheimDC · Utleggsrapport", 9),
+    x:
+      pageWidth -
+      margin -
+      regularFont.widthOfTextAtSize("TrondheimDC · Utleggsrapport", 9),
     y: footerY,
     size: 9,
     font: regularFont,
@@ -625,7 +631,12 @@ export async function generatePDF({
       })
       const headerText = `Vedlegg for utlegg #${index + 1}: ${expense.description} (${formattedDate})`
       const attachmentHeaderWidth = attachmentPage.getWidth() - 2 * margin
-      const headerLines = wrapToWidth(headerText, attachmentHeaderWidth, font, 12)
+      const headerLines = wrapToWidth(
+        headerText,
+        attachmentHeaderWidth,
+        font,
+        12,
+      )
       const headerLineHeight = 14
       const headerTopY =
         attachmentPage.getHeight() - (regularFont.heightAtSize(12) + 5)

@@ -1,7 +1,12 @@
 "use client"
-import React, { useCallback, useState, forwardRef, useEffect } from "react"
-import { useTranslation } from "react-i18next"
 
+// data
+import { countries } from "country-data-list"
+// assets
+import { CheckIcon, ChevronDown, Globe } from "lucide-react"
+import React, { forwardRef, useCallback, useEffect, useState } from "react"
+import { CircleFlag } from "react-circle-flags"
+import { useTranslation } from "react-i18next"
 // shadcn
 import {
   Command,
@@ -16,16 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-
 // utils
 import { cn } from "@/lib/utils"
-
-// assets
-import { ChevronDown, CheckIcon, Globe } from "lucide-react"
-import { CircleFlag } from "react-circle-flags"
-
-// data
-import { countries } from "country-data-list"
 
 // Country interface
 export interface Country {
@@ -94,8 +91,7 @@ const CountryDropdownComponent = (
     undefined,
   )
 
-  const resolvedAutoComplete =
-    autoComplete ?? name ?? "country-name"
+  const resolvedAutoComplete = autoComplete ?? name ?? "country-name"
 
   const handleHiddenInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {

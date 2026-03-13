@@ -46,8 +46,7 @@ export const NorwegianAccountInput = React.forwardRef<
 
   const bank = React.useMemo(() => {
     return (
-      banks.find((b) => b.clearingCodes.includes(rawDigits.slice(0, 4))) ||
-      null
+      banks.find((b) => b.clearingCodes.includes(rawDigits.slice(0, 4))) || null
     )
   }, [rawDigits])
 
