@@ -739,7 +739,7 @@ export default function ExpensePage() {
                                   date > new Date() ||
                                   date < new Date("2020-01-01")
                                 }
-                                initialFocus
+                                autoFocus
                               />
                             </PopoverContent>
                           </Popover>
