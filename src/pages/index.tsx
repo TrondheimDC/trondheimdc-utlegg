@@ -480,10 +480,12 @@ export default function ExpensePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 pb-16 pt-24">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           {t("expense.title")}
         </h1>
-        <p className="mt-2 text-base text-gray-500">{t("expense.subtitle")}</p>
+        <p className="mt-2 text-base text-muted-foreground">
+          {t("expense.subtitle")}
+        </p>
       </div>
 
       <Form {...form}>
@@ -505,11 +507,11 @@ export default function ExpensePage() {
           </Tabs>
 
           {/* Bank details */}
-          <section className="rounded-xl border border-blue-200 bg-blue-50/60 p-5">
-            <h2 className="text-lg font-semibold text-gray-900">
+          <section className="rounded-xl border border-input bg-muted/30 p-5">
+            <h2 className="text-lg font-semibold text-foreground">
               {t("expense.bankAccount")}
             </h2>
-            <p className="mb-4 mt-1 text-sm text-gray-500">
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">
               {residesInNorway
                 ? t("expense.bankDescriptionNorwegian")
                 : t("expense.bankDescriptionInternational")}
@@ -524,8 +526,8 @@ export default function ExpensePage() {
           </section>
 
           {/* Personal information */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          <section className="rounded-xl border border-input bg-card p-5">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               {t("expense.personalInfo")}
             </h2>
 
@@ -649,8 +651,8 @@ export default function ExpensePage() {
           </section>
 
           {/* Expenses */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          <section className="rounded-xl border border-input bg-card p-5">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               {t("expense.expenses")}
             </h2>
 
@@ -659,8 +661,8 @@ export default function ExpensePage() {
                 <div
                   key={field.id}
                   className={cn(
-                    "relative space-y-3 rounded-lg bg-gray-50 p-4",
-                    index > 0 && "border-t border-gray-100",
+                    "relative space-y-3 rounded-lg bg-muted p-4",
+                    index > 0 && "border-t border-border",
                   )}
                 >
                   {fields.length > 1 && (
@@ -670,7 +672,7 @@ export default function ExpensePage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => remove(index)}
-                        className="gap-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        className="gap-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -840,7 +842,7 @@ export default function ExpensePage() {
                       attachment: new File([], ""),
                     })
                   }
-                  className="gap-2 border-dashed border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                  className="gap-2 border-dashed border-input text-muted-foreground hover:border-accent-foreground hover:bg-accent"
                 >
                   <Plus className="h-4 w-4" />
                   {t("expense.addExpense")}
@@ -860,7 +862,7 @@ export default function ExpensePage() {
               type="button"
               variant="outline"
               asChild
-              className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 border-input text-foreground hover:bg-accent"
             >
               <a
                 target="_blank"
@@ -882,7 +884,7 @@ ${form.getValues("name")}`)}`}
             <Button
               type="button"
               variant="outline"
-              className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 border-input text-foreground hover:bg-accent"
               onClick={() => {
                 if (navigator?.clipboard?.writeText) {
                   navigator.clipboard.writeText(targetEmail).then(() => {

@@ -175,7 +175,7 @@ const CurrencyDropdownComponent = (
       >
         <Command className="max-h-[200px] w-full sm:max-h-[270px]">
           <CommandList>
-            <div className="sticky top-0 z-10 bg-white">
+            <div className="sticky top-0 z-10 bg-popover">
               <CommandInput placeholder={t("searchCurrency")} />
             </div>
             <CommandEmpty>{t("noCurrencyFound")}</CommandEmpty>

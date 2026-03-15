@@ -3,9 +3,9 @@ import { AppType } from "next/app"
 import Head from "next/head"
 import { ThemeProvider } from "next-themes"
 import { I18nextProvider } from "react-i18next"
+import { Footer } from "@/components/Footer"
 import { Menu } from "@/components/Menu"
 import i18n from "@/i18n"
-import { Footer } from "@/components/Footer"
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (

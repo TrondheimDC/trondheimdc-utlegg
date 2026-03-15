@@ -95,12 +95,12 @@ export const NorwegianAccountInput = React.forwardRef<
           placeholder={
             (props.placeholder as string | undefined) ?? "e.g. 8601 11 17947"
           }
-          className="flex h-9 w-full rounded-md border border-neutral-200 bg-transparent py-1 text-sm shadow-sm transition-colors placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:placeholder:text-neutral-400 dark:focus-visible:ring-neutral-300 pl-10"
+          className="flex h-9 w-full rounded-md border border-input bg-transparent py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 pl-10"
           style={{ paddingLeft: "3rem" }}
         />
       </div>
       {bank?.name && (
-        <p className="mt-2 text-sm text-neutral-500">{bank.name}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{bank.name}</p>
       )}
     </div>
   )
