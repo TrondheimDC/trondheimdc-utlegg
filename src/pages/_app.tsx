@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { I18nextProvider } from "react-i18next"
 import { Menu } from "@/components/Menu"
 import i18n from "@/i18n"
+import { Footer } from "@/components/Footer"
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
@@ -20,6 +21,7 @@ const MyApp: AppType = ({ Component, pageProps }) => {
         </Head>
         <Menu />
         <Component {...pageProps} />
+        <Footer />
       </ThemeProvider>
     </I18nextProvider>
   )

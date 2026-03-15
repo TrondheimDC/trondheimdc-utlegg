@@ -1,5 +1,11 @@
 {
   "notFound": "Not Found",
+  "menu": {
+    "themeLabel": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
+  },
   "countryDropdown": {
     "selectCountry": "Select a country",
     "searchCountry": "Search country...",

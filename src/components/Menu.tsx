@@ -1,9 +1,28 @@
+"use client"
+
+import { Monitor, Moon, Sun } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "./ui/button"
 
 export const Menu = () => {
-  const { i18n } = useTranslation("common", { keyPrefix: "menu" })
+  const { i18n, t } = useTranslation("common", { keyPrefix: "menu" })
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const themeValue = mounted ? (theme ?? "system") : "system"
 
   const handleLanguageChange = (lang: "no" | "en") => {
     if (i18n.language !== lang) {
@@ -11,10 +30,17 @@ export const Menu = () => {
     }
   }
 
+  const triggerIcon =
+    !mounted || (resolvedTheme ?? "light") === "light" ? (
+      <Sun className="size-4" />
+    ) : (
+      <Moon className="size-4" />
+    )
+
   return (
     <nav
       id="navbar"
-      className="fixed left-0 right-0 top-0 z-[1100] h-[58.22px] w-full border-b border-transparent bg-[#292929] backdrop-blur-md transition-[background-color]"
+      className="fixed left-0 right-0 top-0 z-[49] h-[58.22px] w-full border-b border-transparent bg-[#292929] backdrop-blur-md transition-[background-color]"
     >
       <div className="flex h-full w-full items-center justify-between px-[29px] py-[8px]">
         <Link href="/" className="flex items-center">
@@ -27,7 +53,7 @@ export const Menu = () => {
           />
         </Link>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
           <div className="flex items-center">
             <button
               type="button"

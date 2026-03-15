@@ -1,5 +1,11 @@
 {
   "notFound": "Ikke Funnet",
+  "menu": {
+    "themeLabel": "Tema",
+    "themeLight": "Lys",
+    "themeDark": "Mørk",
+    "themeSystem": "System"
+  },
   "countryDropdown": {
     "selectCountry": "Velg land",
     "searchCountry": "Søk land...",
