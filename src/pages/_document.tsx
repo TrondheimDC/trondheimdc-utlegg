@@ -7,28 +7,8 @@ class CustomDocument extends Document {
       this.props.__NEXT_DATA__.locale ?? nextI18nextConfig.i18n.defaultLocale
     return (
       <Html lang={currentLocale}>
-        <Head>
-          <link
-            href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap"
-            rel="stylesheet"
-            type="text/css"
-          />
-          <link
-            href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic&display=swap"
-            rel="stylesheet"
-            type="text/css"
-          />
-          <link
-            href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700&display=swap"
-            rel="stylesheet"
-            type="text/css"
-          />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-            rel="stylesheet"
-          />
-        </Head>
-        <body>
+        <Head />
+        <body >
           <Main />
           <NextScript />
         </body>
