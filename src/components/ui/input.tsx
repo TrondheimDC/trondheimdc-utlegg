@@ -1,48 +1,21 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  startIcon?: React.ReactElement
-  description?: string
-  error?: string
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30",
+        "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
 }
-
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    { className, type, startIcon, description, error, style, ...props },
-    ref,
-  ) => {
-    const StartIcon = startIcon
-
-    return (
-      <div className="relative w-full">
-        <div className="relative">
-          {StartIcon && (
-            <div className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2">
-              {startIcon}
-            </div>
-          )}
-          <input
-            type={type}
-            className={cn(
-              "flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-neutral-950 placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:file:text-neutral-50 dark:placeholder:text-neutral-400 dark:focus-visible:ring-neutral-300",
-              StartIcon ? "pl-10" : "px-3",
-              className,
-            )}
-            style={StartIcon ? { paddingLeft: "3rem", ...style } : style}
-            ref={ref}
-            {...props}
-          />
-        </div>
-        {description && (
-          <p className="mt-2 text-sm text-neutral-500">{description}</p>
-        )}
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-      </div>
-    )
-  },
-)
-Input.displayName = "Input"
 
 export { Input }
