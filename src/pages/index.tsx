@@ -661,7 +661,7 @@ export default function ExpensePage() {
                 <div
                   key={field.id}
                   className={cn(
-                    "relative space-y-3 rounded-lg border border-border bg-muted/50 p-4",
+                    "relative space-y-3 rounded-lg border border-border bg-background/80 p-4",
                     index > 0 && "border-t border-border",
                   )}
                 >
@@ -712,7 +712,7 @@ export default function ExpensePage() {
                                 <Button
                                   variant="outline"
                                   className={cn(
-                                    "w-full pl-3 text-left font-normal",
+                                    "w-full bg-background pl-3 text-left font-normal",
                                     !field.value && "text-muted-foreground",
                                   )}
                                 >
