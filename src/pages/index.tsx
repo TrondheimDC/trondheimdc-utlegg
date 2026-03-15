@@ -67,6 +67,9 @@ function getString(
 function parseFormQueryParams(
   query: Record<string, string | string[] | undefined>,
 ) {
+  const langRaw = getString(query, "lang", "").toLowerCase()
+  const language = langRaw === "en" || langRaw === "no" ? langRaw : undefined
+
   const rawCountry = getString(query, "country", "")
   let country = rawCountry
   let countryIso2ForHeuristic: string | undefined
@@ -117,6 +120,7 @@ function parseFormQueryParams(
   }
 
   return {
+    language,
     name: getString(query, "name", ""),
     email: getString(query, "email", ""),
     streetAddress: getString(query, "streetAddress", ""),
@@ -323,13 +327,17 @@ export default function ExpensePage() {
 
     const parsed = parseFormQueryParams(queryRecord)
 
+    if (parsed.language && i18n.language !== parsed.language) {
+      void i18n.changeLanguage(parsed.language)
+    }
+
     form.reset({
       ...form.getValues(),
       ...parsed,
       bankAccountType:
         (parsed.bankAccountType as "checking" | "savings") || "checking",
     })
-  }, [form])
+  }, [form, i18n])
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
