@@ -1,4 +1,4 @@
-import "../styles/globals.css"
+import "../styles/index.css"
 import { AppType } from "next/app"
 import Head from "next/head"
 import { I18nextProvider } from "react-i18next"
