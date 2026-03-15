@@ -440,7 +440,7 @@ export function FileUploader(props: FileUploaderProps) {
             <div
               {...getRootProps()}
               className={cn(
-                "border-muted-foreground/25 hover:bg-muted/25 group relative grid h-32 w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed px-4 py-2 text-center transition",
+                "border-muted-foreground/25 hover:bg-muted group relative grid h-32 w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed px-4 py-2 text-center transition",
                 "ring-offset-background focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
                 isDragActive && "border-muted-foreground/50",
                 isDisabled && "pointer-events-none opacity-60",

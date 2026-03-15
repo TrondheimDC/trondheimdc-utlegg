@@ -507,7 +507,7 @@ export default function ExpensePage() {
           </Tabs>
 
           {/* Bank details */}
-          <section className="rounded-xl border border-input bg-muted/30 p-5">
+          <section className="rounded-xl border border-input bg-card p-5 shadow-md">
             <h2 className="text-lg font-semibold text-foreground">
               {t("expense.bankAccount")}
             </h2>
@@ -526,7 +526,7 @@ export default function ExpensePage() {
           </section>
 
           {/* Personal information */}
-          <section className="rounded-xl border border-input bg-card p-5">
+          <section className="rounded-xl border border-input bg-card p-5 shadow-md">
             <h2 className="mb-4 text-lg font-semibold text-foreground">
               {t("expense.personalInfo")}
             </h2>
@@ -651,7 +651,7 @@ export default function ExpensePage() {
           </section>
 
           {/* Expenses */}
-          <section className="rounded-xl border border-input bg-card p-5">
+          <section className="rounded-xl border border-input bg-card p-5 shadow-md">
             <h2 className="mb-4 text-lg font-semibold text-foreground">
               {t("expense.expenses")}
             </h2>
@@ -661,7 +661,7 @@ export default function ExpensePage() {
                 <div
                   key={field.id}
                   className={cn(
-                    "relative space-y-3 rounded-lg bg-muted p-4",
+                    "relative space-y-3 rounded-lg border border-border bg-muted/50 p-4",
                     index > 0 && "border-t border-border",
                   )}
                 >
