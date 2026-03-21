@@ -462,7 +462,10 @@ export function BankDetailsForm({
               <FormItem>
                 <FormLabel>{t("expense.bankName")}</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="e.g. Chase Bank" />
+                  <Input
+                    {...field}
+                    placeholder={t("expense.bankNamePlaceholder")}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
