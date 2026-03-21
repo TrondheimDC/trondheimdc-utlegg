@@ -56,40 +56,36 @@ export function formatNorwegianBBANForDisplay(bban: string): string {
   return `${digits.slice(0, 4)} ${digits.slice(4, 6)} ${digits.slice(6)}`
 }
 
-// Create schemas with localized error messages
-export const createExpenseSchemas = (t: (key: string) => string) => {
+export const createExpenseSchemas = () => {
   const expenseItemSchema = z.object({
     description: z
       .string({
-        required_error: t("expense.errors.descriptionRequired"),
-        invalid_type_error: t("expense.errors.descriptionRequired"),
+        required_error: "errors.descriptionRequired",
+        invalid_type_error: "errors.descriptionRequired",
       })
-      .min(2, t("expense.errors.descriptionRequired")),
+      .min(2, "errors.descriptionRequired"),
     amount: z
       .number({
-        required_error: t("expense.errors.amountPositive"),
-        invalid_type_error: t("expense.errors.amountPositive"),
+        required_error: "errors.amountPositive",
+        invalid_type_error: "errors.amountPositive",
       })
-      .min(0.01, t("expense.errors.amountPositive")),
+      .min(0.01, "errors.amountPositive"),
     currency: z
       .string({
-        required_error: t("expense.errors.currencyRequired"),
-        invalid_type_error: t("expense.errors.currencyRequired"),
+        required_error: "errors.currencyRequired",
+        invalid_type_error: "errors.currencyRequired",
       })
-      .min(1, t("expense.errors.currencyRequired"))
+      .min(1, "errors.currencyRequired")
       .default("NOK"),
     date: z
       .date({
-        required_error: t("expense.errors.dateRequired"),
-        invalid_type_error: t("expense.errors.dateRequired"),
+        required_error: "errors.dateRequired",
+        invalid_type_error: "errors.dateRequired",
       })
-      .min(new Date("2020-01-01"), t("expense.errors.dateRequired")),
+      .min(new Date("2020-01-01"), "errors.dateRequired"),
     attachment: z
-      .custom<File>(
-        (file) => file instanceof File,
-        t("expense.errors.fileRequired"),
-      )
-      .refine((file) => file.size > 0, t("expense.errors.fileRequired"))
+      .custom<File>((file) => file instanceof File, "errors.fileRequired")
+      .refine((file) => file.size > 0, "errors.fileRequired")
       .default(new File([], "")),
   })
 
@@ -97,32 +93,32 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
     .object({
       name: z
         .string({
-          required_error: t("expense.errors.nameRequired"),
-          invalid_type_error: t("expense.errors.nameRequired"),
+          required_error: "errors.nameRequired",
+          invalid_type_error: "errors.nameRequired",
         })
-        .min(1, t("expense.errors.nameRequired")),
+        .min(1, "errors.nameRequired"),
       streetAddress: z
         .string({
-          required_error: t("expense.errors.streetRequired"),
-          invalid_type_error: t("expense.errors.streetRequired"),
+          required_error: "errors.streetRequired",
+          invalid_type_error: "errors.streetRequired",
         })
-        .min(1, t("expense.errors.streetRequired")),
+        .min(1, "errors.streetRequired"),
       postalCode: z
         .string({
-          required_error: t("expense.errors.postalRequired"),
-          invalid_type_error: t("expense.errors.postalRequired"),
+          required_error: "errors.postalRequired",
+          invalid_type_error: "errors.postalRequired",
         })
-        .min(1, t("expense.errors.postalRequired")),
+        .min(1, "errors.postalRequired"),
       city: z
         .string({
-          required_error: t("expense.errors.cityRequired"),
-          invalid_type_error: t("expense.errors.cityRequired"),
+          required_error: "errors.cityRequired",
+          invalid_type_error: "errors.cityRequired",
         })
-        .min(1, t("expense.errors.cityRequired")),
+        .min(1, "errors.cityRequired"),
       country: z
         .string({
-          required_error: t("expense.errors.countryRequired"),
-          invalid_type_error: t("expense.errors.countryRequired"),
+          required_error: "errors.countryRequired",
+          invalid_type_error: "errors.countryRequired",
         })
         // Allow empty by default; we enforce "required" only when not residing
         // in Norway in the superRefine block below.
@@ -145,16 +141,16 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
       skipBankValidation: z.boolean().optional().default(false),
       email: z
         .string({
-          required_error: t("expense.errors.invalidEmail"),
-          invalid_type_error: t("expense.errors.invalidEmail"),
+          required_error: "errors.invalidEmail",
+          invalid_type_error: "errors.invalidEmail",
         })
-        .email(t("expense.errors.invalidEmail")),
+        .email("errors.invalidEmail"),
       expenses: z
         .array(expenseItemSchema, {
-          required_error: t("expense.errors.expenseRequired"),
-          invalid_type_error: t("expense.errors.expenseRequired"),
+          required_error: "errors.expenseRequired",
+          invalid_type_error: "errors.expenseRequired",
         })
-        .min(1, t("expense.errors.expenseRequired")),
+        .min(1, "errors.expenseRequired"),
     })
     .superRefine((data, ctx) => {
       const skip = data.skipBankValidation === true
@@ -165,7 +161,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!country) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.countryRequired"),
+            message: "errors.countryRequired",
             path: ["country"],
           })
         }
@@ -176,7 +172,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!accountNumber) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankAccountNumberRequired"),
+            message: "errors.bankAccountNumberRequired",
             path: ["bankAccountNumber"],
           })
           return
@@ -184,7 +180,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!skip && !validateNorwegianBBAN(accountNumber)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.invalidNorwegianAccount"),
+            message: "errors.invalidNorwegianAccount",
             path: ["bankAccountNumber"],
           })
         }
@@ -194,7 +190,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
       if (!data.bankCountryIso2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: t("expense.errors.bankCountryRequired"),
+          message: "errors.bankCountryRequired",
           path: ["bankCountry"],
         })
         return
@@ -206,7 +202,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!iban) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankIbanRequired"),
+            message: "errors.bankIbanRequired",
             path: ["bankIban"],
           })
         }
@@ -214,20 +210,20 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!swiftBic) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankSwiftRequired"),
+            message: "errors.bankSwiftRequired",
             path: ["bankSwiftBic"],
           })
         } else if (!skip && !validateBIC(swiftBic)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.invalidSwift"),
+            message: "errors.invalidSwift",
             path: ["bankSwiftBic"],
           })
         }
         if (!skip && iban && !validateIBAN(iban.toUpperCase())) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.invalidAccount"),
+            message: "errors.invalidAccount",
             path: ["bankIban"],
           })
         }
@@ -241,13 +237,13 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!routing) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankRoutingRequired"),
+            message: "errors.bankRoutingRequired",
             path: ["bankRoutingNumber"],
           })
         } else if (!validateABARoutingNumber(routing)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.invalidRoutingNumber"),
+            message: "errors.invalidRoutingNumber",
             path: ["bankRoutingNumber"],
           })
         }
@@ -255,7 +251,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!accountNum) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankAccountNumberRequired"),
+            message: "errors.bankAccountNumberRequired",
             path: ["bankAccountNumber"],
           })
         } else {
@@ -263,7 +259,7 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
           if (digitsOnly.length < 4 || digitsOnly.length > 17) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: t("expense.errors.invalidUsAccountNumber"),
+              message: "errors.invalidUsAccountNumber",
               path: ["bankAccountNumber"],
             })
           }
@@ -272,32 +268,32 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
         if (!usSwift) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankSwiftRequired"),
+            message: "errors.bankSwiftRequired",
             path: ["bankSwiftBic"],
           })
         } else if (!validateBIC(usSwift)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.invalidSwift"),
+            message: "errors.invalidSwift",
             path: ["bankSwiftBic"],
           })
         }
         if (!(data.bankName || "").trim())
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankNameRequired"),
+            message: "errors.bankNameRequired",
             path: ["bankName"],
           })
         if (!(data.bankAddress || "").trim())
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankAddressRequired"),
+            message: "errors.bankAddressRequired",
             path: ["bankAddress"],
           })
         if (!(data.bankAccountHolderName || "").trim())
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: t("expense.errors.bankHolderRequired"),
+            message: "errors.bankHolderRequired",
             path: ["bankAccountHolderName"],
           })
         return
@@ -306,31 +302,31 @@ export const createExpenseSchemas = (t: (key: string) => string) => {
       if (!(data.bankAccountNumber || "").trim())
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: t("expense.errors.bankAccountNumberRequired"),
+          message: "errors.bankAccountNumberRequired",
           path: ["bankAccountNumber"],
         })
       if (!(data.bankSwiftBic || "").trim())
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: t("expense.errors.bankSwiftRequired"),
+          message: "errors.bankSwiftRequired",
           path: ["bankSwiftBic"],
         })
       if (!(data.bankName || "").trim())
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: t("expense.errors.bankNameRequired"),
+          message: "errors.bankNameRequired",
           path: ["bankName"],
         })
       if (!(data.bankAddress || "").trim())
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: t("expense.errors.bankAddressRequired"),
+          message: "errors.bankAddressRequired",
           path: ["bankAddress"],
         })
       if (!(data.bankAccountHolderName || "").trim())
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: t("expense.errors.bankHolderRequired"),
+          message: "errors.bankHolderRequired",
           path: ["bankAccountHolderName"],
         })
     })

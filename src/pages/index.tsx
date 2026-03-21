@@ -278,7 +278,7 @@ export default function ExpensePage() {
 
   const { t, i18n } = useTranslation("common")
 
-  const { formSchema } = createExpenseSchemas(t)
+  const { formSchema } = createExpenseSchemas()
   type FormValues = z.infer<typeof formSchema>
 
   const [isLoading, setIsLoading] = useState(false)

@@ -12,6 +12,7 @@ import {
   useFormContext,
   useFormState,
 } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
@@ -136,7 +137,8 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
 
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : props.children
+  const { t } = useTranslation("common")
+  const body = error ? t(`expense.${error.message}`) : props.children
 
   if (!body) {
     return null
