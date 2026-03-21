@@ -1,41 +1,17 @@
 "use client"
 
-import { Monitor, Moon, Sun } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "./ui/button"
 
 export const Menu = () => {
-  const { i18n, t } = useTranslation("common", { keyPrefix: "menu" })
-  const { theme, setTheme, resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  const themeValue = mounted ? (theme ?? "system") : "system"
+  const { i18n } = useTranslation("common", { keyPrefix: "menu" })
 
   const handleLanguageChange = (lang: "no" | "en") => {
     if (i18n.language !== lang) {
       void i18n.changeLanguage(lang)
     }
   }
-
-  const triggerIcon =
-    !mounted || (resolvedTheme ?? "light") === "light" ? (
-      <Sun className="size-4" />
-    ) : (
-      <Moon className="size-4" />
-    )
 
   return (
     <nav

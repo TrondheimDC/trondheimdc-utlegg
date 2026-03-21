@@ -8,7 +8,7 @@ class CustomDocument extends Document {
     return (
       <Html lang={currentLocale}>
         <Head />
-        <body >
+        <body>
           <Main />
           <NextScript />
         </body>

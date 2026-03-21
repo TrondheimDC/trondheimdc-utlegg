@@ -1,7 +1,7 @@
 "use client"
 
-import * as React from "react"
 import { useTheme } from "next-themes"
+import * as React from "react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
 function SunIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
+      aria-label="Sun icon"
       xmlns="http://www.w3.org/2000/svg"
       width="16"
       height="16"
@@ -40,6 +41,7 @@ function SunIcon(props: React.SVGProps<SVGSVGElement>) {
 function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
+      aria-label="Moon icon"
       xmlns="http://www.w3.org/2000/svg"
       width="16"
       height="16"
@@ -59,6 +61,7 @@ function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
 function MonitorIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
+      aria-label="Monitor icon"
       xmlns="http://www.w3.org/2000/svg"
       width="16"
       height="16"
@@ -80,6 +83,7 @@ function MonitorIcon(props: React.SVGProps<SVGSVGElement>) {
 function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
+      aria-label="Check icon"
       xmlns="http://www.w3.org/2000/svg"
       width="14"
       height="14"
@@ -160,4 +164,3 @@ export function ThemeToggle() {
     </DropdownMenu>
   )
 }
-

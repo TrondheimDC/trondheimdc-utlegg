@@ -10,9 +10,7 @@ import i18n from "@/i18n"
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
     <I18nextProvider i18n={i18n}>
-      <ThemeProvider
-        attribute="class"
-      >
+      <ThemeProvider attribute="class">
         <Head>
           <meta charSet="UTF-8" />
           <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
