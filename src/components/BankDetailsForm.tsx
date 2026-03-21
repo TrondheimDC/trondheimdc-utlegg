@@ -322,10 +322,11 @@ export function BankDetailsForm({
                   field.onChange(alpha3)
                   form.setValue("bankCountryIso2", alpha2)
 
+                  // Only auto-fill personal country if user hasn't touched it AND
+                  // the country field is currently empty (wasn't set from URL params)
+                  const currentCountry = form.getValues("country")
                   const countryState = form.getFieldState("country")
-                  const hasUserTouchedCountry =
-                    countryState.isTouched || countryState.isDirty
-                  if (!hasUserTouchedCountry) {
+                  if (!countryState.isTouched && !currentCountry) {
                     form.setValue("country", alpha3)
                   }
                 }}
