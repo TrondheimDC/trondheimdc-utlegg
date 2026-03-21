@@ -7,11 +7,7 @@ import Dropzone, {
   type DropzoneProps,
   type FileRejection,
 } from "react-dropzone"
-import ReactCrop, {
-  type Crop,
-  centerCrop,
-  makeAspectCrop,
-} from "react-image-crop"
+import ReactCrop, { type Crop } from "react-image-crop"
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch"
 import { Button } from "@/components/ui/button"
 import {
@@ -131,19 +127,13 @@ function CropDialog({
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget
-    const crop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: "%",
-          width: 90,
-        },
-        16 / 9,
-        width,
-        height,
-      ),
-      width,
-      height,
-    )
+    const crop: Crop = {
+      unit: "%",
+      width: 100,
+      height: 100,
+      x: 0,
+      y: 0,
+    }
     setCrop(crop)
   }
 
