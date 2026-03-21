@@ -417,6 +417,7 @@ export function BankDetailsForm({
                   <FormControl>
                     <Input
                       {...field}
+                      inputMode="numeric"
                       placeholder={t("expense.bankAccountNumberUsPlaceholder")}
                       onBlur={() => {
                         field.onBlur()
