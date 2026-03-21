@@ -320,7 +320,7 @@ export function FileUploader(props: FileUploaderProps) {
     accept = {
       "image/*": [],
     },
-    maxSize = 1024 * 1024 * 2,
+    maxSize,
     maxFileCount = 1,
     multiple = false,
     disabled = false,
@@ -467,23 +467,6 @@ export function FileUploader(props: FileUploaderProps) {
                   />
                   <p className="text-muted-foreground text-sm font-medium">
                     {t("fileUploader.clickOrDrag")}
-                  </p>
-                  <p className="text-muted-foreground/70 text-xs">
-                    {(() => {
-                      const size = formatBytes(maxSize)
-                      const countLabel =
-                        maxFileCount === Infinity
-                          ? t("fileUploader.multiple")
-                          : maxFileCount
-
-                      return maxFileCount > 1
-                        ? t("fileUploader.limitMany", {
-                            count:
-                              typeof countLabel === "number" ? countLabel : 0,
-                            size,
-                          })
-                        : t("fileUploader.limitSingle", { size })
-                    })()}
                   </p>
                 </div>
               )}
