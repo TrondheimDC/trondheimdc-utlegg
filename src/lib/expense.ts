@@ -334,6 +334,10 @@ export const createExpenseSchemas = () => {
   return { expenseItemSchema, formSchema }
 }
 
+export type ExpenseReportFormValues = z.infer<
+  ReturnType<typeof createExpenseSchemas>["formSchema"]
+>
+
 /**
  * Validates a bank account number, supporting both Norwegian BBAN and international IBAN formats.
  * Automatically detects the format based on the input.
@@ -403,28 +407,46 @@ export const validateABARoutingNumber = (routing: string): boolean => {
 
 export const validateAccountNumber = validateBankAccount
 
+// ---------------------------------------------------------------------------
+// Exchange rate helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Internal helper to fetch exchange rate data from Norges Bank API
+ * Converts an amount using Norges Bank rate fields (raw rate and UNIT_MULT).
+ */
+export function nokAmountFromExchangeRateData(
+  amount: number,
+  data: { rate: number; unitMultiplier: number },
+): number {
+  const normalizedRate = data.rate / data.unitMultiplier
+  return Math.round(amount * normalizedRate * 100) / 100
+}
+
+/**
+ * Fetches exchange rate data from Norges Bank API (currency + date only; no amount).
  * @param currency The currency code
  * @param date The date to get the exchange rate for
- * @returns Object with rate and unitMultiplier, or null if not found
+ * @returns Object with rate, unitMultiplier, and the actual date of the rate, or null if not found
  */
-async function fetchExchangeRateData(
+export async function fetchExchangeRateData(
   currency: string,
   date: Date,
-): Promise<{ rate: number; unitMultiplier: number } | null> {
+): Promise<{
+  rate: number
+  unitMultiplier: number
+  rateDate: Date
+} | null> {
   if (currency === "NOK") {
-    return { rate: 1, unitMultiplier: 1 }
+    return { rate: 1, unitMultiplier: 1, rateDate: date }
   }
 
   try {
-    const dateStr = date.toISOString().split("T")[0]
-    // Request a longer period (3 weeks back) to ensure we get business days
-    // Since observations are only updated on business days, we need to go back
-    // to find the most recent available rate
+    const dateStr = toISODateString(date)
+    // Request 7 days back to ensure we get business days
+    // Covers weekends (2 days) and most holidays (long weekends up to 4 days)
     const startDate = new Date(date)
-    startDate.setDate(startDate.getDate() - 14) // 2 weeks back
-    const startDateStr = startDate.toISOString().split("T")[0]
+    startDate.setDate(startDate.getDate() - 7)
+    const startDateStr = toISODateString(startDate)
 
     const url = `https://data.norges-bank.no/api/data/EXR/B.${currency}.NOK.SP?format=sdmx-json&startPeriod=${startDateStr}&endPeriod=${dateStr}&locale=no`
 
@@ -456,6 +478,20 @@ async function fetchExchangeRateData(
         // Could not parse UNIT_MULT from API response; fall back to default 1
       }
 
+      // Get the dimension values (dates) from the API
+      const dimensions = responseData.data?.structure?.dimensions
+      const observationDimensions = dimensions?.observation
+
+      let dimensionValues: Array<{ id: string }> = []
+      if (observationDimensions && Array.isArray(observationDimensions)) {
+        const timeDimension = observationDimensions.find(
+          (d: { id?: string }) => d.id === "TIME_PERIOD",
+        )
+        if (timeDimension?.values && Array.isArray(timeDimension.values)) {
+          dimensionValues = timeDimension.values
+        }
+      }
+
       const observations =
         responseData.data.dataSets[0].series["0:0:0:0"].observations
 
@@ -464,25 +500,41 @@ async function fetchExchangeRateData(
       )
 
       if (observationKeys.length === 0) {
-        // No observations found in dataset
         return null
       }
 
       const lastKey = observationKeys[observationKeys.length - 1]
       if (!lastKey) {
-        // No valid observation key found
         return null
+      }
+
+      // Get the actual date from the dimension values
+      const lastKeyNum = parseInt(lastKey, 10)
+      let rateDate: Date
+
+      if (dimensionValues.length > lastKeyNum) {
+        const dimValue = dimensionValues[lastKeyNum]
+        const rateDateStr =
+          typeof dimValue === "string"
+            ? dimValue
+            : (dimValue?.id as string | undefined)
+        if (rateDateStr) {
+          rateDate = parseISODateString(rateDateStr.substring(0, 10))
+        } else {
+          rateDate = date
+        }
+      } else {
+        rateDate = date
       }
 
       const rateStr = observations[lastKey][0]
       const rate = Number(rateStr)
 
       if (Number.isNaN(rate) || !Number.isFinite(rate)) {
-        // Invalid exchange rate value
         return null
       }
 
-      return { rate, unitMultiplier }
+      return { rate, unitMultiplier, rateDate }
     } catch (_e) {
       // Could not extract rate from dataset
     }
@@ -494,52 +546,87 @@ async function fetchExchangeRateData(
   }
 }
 
-/**
- * Fetches exchange rate from Norges Bank API for a given currency and date
- * @param currency The currency code (e.g., 'USD', 'EUR')
- * @param date The date to get the exchange rate for
- * @returns The exchange rate as returned by the API (for display), or null if not found
- */
-export async function getExchangeRate(
-  currency: string,
-  date: Date,
-): Promise<number | null> {
-  const data = await fetchExchangeRateData(currency, date)
-  return data?.rate ?? null
+/** Rate row from {@link fetchExchangeRateData} (no amount yet). */
+export type ExchangeRateDatum = {
+  rate: number
+  unitMultiplier: number
+  rateDate: Date
+}
+
+/** Values shown under the amount field (rate line + NOK repayment). */
+export type ExchangeRateDisplayRow = {
+  rate: number
+  date: Date
+  nokAmount: number
+  unitMultiplier: number
+}
+
+export function exchangeRateDisplayInfo(
+  currency: string | undefined,
+  expenseDate: Date | undefined,
+  amount: number,
+  rateDatum: ExchangeRateDatum | null | undefined,
+): ExchangeRateDisplayRow | null {
+  if (!currency || currency === "NOK" || !expenseDate || amount <= 0)
+    return null
+  if (!rateDatum) return null
+  return {
+    rate: rateDatum.rate,
+    date: rateDatum.rateDate,
+    unitMultiplier: rateDatum.unitMultiplier,
+    nokAmount: nokAmountFromExchangeRateData(amount, rateDatum),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Formatting helpers
+// ---------------------------------------------------------------------------
+
+/** Format a Date for Norwegian display (dd.mm.yyyy). */
+export function formatDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, "0")
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  return `${day}.${month}.${date.getFullYear()}`
 }
 
 /**
- * Converts an amount from one currency to NOK using Norges Bank exchange rates
- * @param amount The amount to convert
- * @param currency The source currency code
- * @param date The date to use for the exchange rate
- * @returns The converted amount in NOK, or the original amount if conversion fails
+ * Long localized calendar date for UI (same idea as date-fns "PPP").
+ * Uses UTC noon so the calendar day cannot shift across time zones.
  */
-export async function convertToNOK(
-  amount: number,
-  currency: string,
-  date: Date,
-): Promise<number> {
-  if (currency === "NOK") {
-    return amount
-  }
+export function formatDateLong(date: Date, language: "no" | "en"): string {
+  const utcNoon = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0),
+  )
+  const locale = language === "no" ? "nb-NO" : "en-GB"
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(utcNoon)
+}
 
-  const data = await fetchExchangeRateData(currency, date)
+/** Format an exchange rate for display (4 decimal places, Norwegian locale). */
+export function formatExchangeRate(
+  rate: number,
+  unitMultiplier: number,
+): string {
+  const normalizedRate = rate / unitMultiplier
+  return new Intl.NumberFormat("nb-NO", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(normalizedRate)
+}
 
-  if (data === null) {
-    console.warn(
-      `Could not fetch exchange rate for ${currency} on ${date.toISOString()}, using original amount`,
-    )
-    return amount
-  }
+// ---------------------------------------------------------------------------
+// Internal date helpers (avoid timezone pitfalls with ISO date strings)
+// ---------------------------------------------------------------------------
 
-  // Normalize the rate for calculation
-  // Example: If API returns 157.80 for DKK with UNIT_MULT=2 (per 100 units),
-  // we need to divide by 100 to get the rate per unit: 157.80 / 100 = 1.578
-  const normalizedRate = data.rate / data.unitMultiplier
+/** Format a Date as "YYYY-MM-DD" using local date parts (no timezone shift). */
+function toISODateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
 
-  // Round to 2 decimal places to avoid floating-point precision issues
-  // This ensures we always get clean currency values (e.g., 123.45 instead of 123.4500000001)
-  const converted = amount * normalizedRate
-  return Math.round(converted * 100) / 100
+/** Parse "YYYY-MM-DD" into a local Date at midnight (no timezone shift). */
+function parseISODateString(str: string): Date {
+  const [y, m, d] = str.split("-").map(Number) as [number, number, number]
+  return new Date(y, m - 1, d)
 }

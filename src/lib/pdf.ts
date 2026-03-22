@@ -2,11 +2,14 @@ import { PDFDocument, PDFImage, rgb, StandardFonts } from "pdf-lib"
 import { z } from "zod"
 import {
   createExpenseSchemas,
+  fetchExchangeRateData,
+  formatDate,
+  formatExchangeRate,
   formatIBANForDisplay,
   formatNorwegianBBANForDisplay,
   getBankCountryType,
+  nokAmountFromExchangeRateData,
 } from "@/lib/expense"
-import { convertToNOK, getExchangeRate } from "./expense"
 import { formatCurrency } from "./utils"
 
 function bankDetailsLines(
@@ -113,9 +116,9 @@ export async function generatePDF({
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
 
   // TrondheimDC brand colors (rgb 0–1)
-  const jzDark = rgb(0x22 / 255, 0x22 / 255, 0x22 / 255)
-  const jzYellow = rgb(0xfe / 255, 0xd1 / 255, 0x36 / 255)
-  const jzGray = rgb(0.92, 0.92, 0.92)
+  const dark = rgb(0x22 / 255, 0x22 / 255, 0x22 / 255)
+  const yellow = rgb(0xfe / 255, 0xd1 / 255, 0x36 / 255)
+  const gray = rgb(0.92, 0.92, 0.92)
   const borderGray = rgb(0.5, 0.5, 0.5)
 
   const hasLogo = logoPngBytes != null && logoPngBytes.byteLength > 0
@@ -127,7 +130,7 @@ export async function generatePDF({
     y: headerTop,
     width: pageWidth,
     height: headerBarHeight,
-    color: jzDark,
+    color: dark,
   })
 
   if (hasLogo) {
@@ -150,7 +153,7 @@ export async function generatePDF({
     y: titleY,
     size: 24,
     font,
-    color: jzDark,
+    color: dark,
   })
   if (!hasLogo) {
     coverPage.drawText("TrondheimDC", {
@@ -158,7 +161,7 @@ export async function generatePDF({
       y: titleY - 23,
       size: 11,
       font: regularFont,
-      color: jzYellow,
+      color: yellow,
     })
   }
 
@@ -313,7 +316,7 @@ export async function generatePDF({
         y,
         size: labelFontSize,
         font,
-        color: jzDark,
+        color: dark,
       })
     }
     coverPage.drawText(line.value, {
@@ -340,7 +343,7 @@ export async function generatePDF({
   })
 
   const tableTop = tableTopY
-  const headerHeight = 22
+  const headerHeight = 30
 
   const headerTextY = tableTop - 14
   const headerBottomY = tableTop - headerHeight
@@ -362,13 +365,14 @@ export async function generatePDF({
     y: tableTop - headerHeight,
     width: usableWidth,
     height: headerHeight,
-    color: jzGray,
+    color: gray,
   })
   const headerTexts = {
     attachment: "#",
     description: "Beskrivelse",
     date: "Dato",
-    exchange: "Valuta / kurs",
+    exchange: "Valutakurs",
+    exchangeSubtext: "Norges Bank",
     amount: "Beløp (NOK)",
   }
   for (const key of Object.keys(rebalancedColumns) as Array<
@@ -379,8 +383,18 @@ export async function generatePDF({
       y: headerTextY,
       size: 11,
       font,
-      color: jzDark,
+      color: dark,
     })
+    // Add subtext for exchange column
+    if (key === "exchange" && headerTexts.exchangeSubtext) {
+      coverPage.drawText(headerTexts.exchangeSubtext, {
+        x: rebalancedColumns[key].x,
+        y: headerTextY - 12,
+        size: 8,
+        font: regularFont,
+        color: borderGray,
+      })
+    }
   }
 
   const dataFontSize = 10
@@ -401,33 +415,26 @@ export async function generatePDF({
 
   let totalAmount = 0
   for (const [index, expense] of expenses.entries()) {
-    const expenseDate = new Date(expense.date)
-    const dateText = expenseDate.toLocaleDateString("no-NO", {
+    const expenseDate = expense.date
+    const dateText = expenseDate.toLocaleString("no-NO", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     })
 
-    const amountInNOK = await convertToNOK(
-      expense.amount,
-      expense.currency,
-      expenseDate,
-    )
+    const rateData = await fetchExchangeRateData(expense.currency, expenseDate)
+    const amountInNOK =
+      rateData && expense.currency !== "NOK"
+        ? nokAmountFromExchangeRateData(expense.amount, rateData)
+        : expense.amount
     totalAmount += amountInNOK
 
     const amountText = formatCurrency(amountInNOK)
 
     let exchangeText = "-"
-    if (expense.currency !== "NOK") {
-      const exchangeRate = await getExchangeRate(expense.currency, expenseDate)
+    if (expense.currency !== "NOK" && rateData) {
       const base = `${formatCurrency(expense.amount)} ${expense.currency}`
-      exchangeText =
-        exchangeRate !== null
-          ? `${base} @ ${formatCurrency(exchangeRate, "nb-NO", {
-              minimumFractionDigits: 4,
-              maximumFractionDigits: 4,
-            })}`
-          : base
+      exchangeText = `${base} @ ${formatExchangeRate(rateData.rate, rateData.unitMultiplier)} (${formatDate(rateData.rateDate)})`
     }
 
     const descriptionLines = wrapToWidth(
@@ -475,7 +482,7 @@ export async function generatePDF({
         y: rowBottomY,
         width: usableWidth,
         height: row.rowHeight,
-        color: jzGray,
+        color: gray,
       })
     }
 
@@ -546,7 +553,7 @@ export async function generatePDF({
     y: totalRowTopY - totalRowHeight,
     width: usableWidth,
     height: totalRowHeight,
-    color: jzGray,
+    color: gray,
   })
 
   const formattedTotalAmount = formatCurrency(totalAmount)
@@ -565,7 +572,7 @@ export async function generatePDF({
     y: totalBaselineY,
     size: 12,
     font,
-    color: jzDark,
+    color: dark,
   })
   coverPage.drawText(formattedTotalAmount, {
     x:
@@ -575,7 +582,7 @@ export async function generatePDF({
     y: totalBaselineY,
     size: 12,
     font,
-    color: jzDark,
+    color: dark,
   })
 
   // Footer on cover page
@@ -623,8 +630,7 @@ export async function generatePDF({
 
     for (const page of receiptPages) {
       const attachmentPage = pdfDoc.addPage(page)
-      const expenseDate = new Date(expense.date)
-      const formattedDate = expenseDate.toLocaleDateString("no-NO", {
+      const formattedDate = expense.date.toLocaleString("no-NO", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -646,7 +652,7 @@ export async function generatePDF({
           y: headerTopY - lineIndex * headerLineHeight,
           size: 12,
           font,
-          color: jzDark,
+          color: dark,
         })
       })
     }

@@ -62,6 +62,8 @@
     "addExpense": "Legg til utgift",
     "description": "Beskrivelse",
     "amount": "Beløp (inkl. mva)",
+    "exchangeRate": "Valutakurs fra Norges Bank ({{date}}): {{rate}}",
+    "youGetBack": "Du får tilbake {{amount}} kr",
     "currency": "Valuta",
     "selectCurrency": "Velg valuta",
     "attachment": "Bilag",

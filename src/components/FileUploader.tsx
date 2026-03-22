@@ -126,14 +126,14 @@ function CropDialog({
   }, [file])
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const { width, height } = e.currentTarget
-    const crop: Crop = {
+    const crop = {
       unit: "%",
       width: 100,
       height: 100,
       x: 0,
       y: 0,
-    }
+    } as const
+
     setCrop(crop)
   }
 

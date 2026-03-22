@@ -106,17 +106,6 @@ export function BankDetailsForm({
     form.setValue("skipBankValidation", false)
   }, [type, form])
 
-  const bankCountryName = React.useMemo(() => {
-    if (!bankCountryIso2) return undefined
-    try {
-      return new Intl.DisplayNames([language], { type: "region" }).of(
-        bankCountryIso2.toUpperCase(),
-      )
-    } catch {
-      return bankCountryIso2.toUpperCase()
-    }
-  }, [bankCountryIso2, language])
-
   const clearBankErrors = React.useCallback(() => {
     form.clearErrors("bankAccountNumber")
     form.clearErrors("bankIban")

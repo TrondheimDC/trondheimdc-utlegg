@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
 import { getSymbolFromCurrency } from "country-data-list"
-import { format } from "date-fns"
-import { enGB, nb } from "date-fns/locale"
 import { CalendarIcon, Check, Copy, Mail, Plus, Trash2 } from "lucide-react"
 import React, { useState } from "react"
+import { enGB, nb } from "react-day-picker/locale"
 import { type Control, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { z } from "zod"
@@ -33,7 +33,15 @@ import {
   findCountryByCodeOrName,
   getDisplayLocaleFromCountry,
 } from "@/lib/country"
-import { createExpenseSchemas } from "@/lib/expense"
+import {
+  createExpenseSchemas,
+  type ExpenseReportFormValues,
+  exchangeRateDisplayInfo,
+  fetchExchangeRateData,
+  formatDate,
+  formatDateLong,
+  formatExchangeRate,
+} from "@/lib/expense"
 import { generatePDF } from "@/lib/pdf"
 import { cn } from "@/lib/utils"
 
@@ -152,11 +160,12 @@ function searchToQueryRecord(
 }
 
 type ExpenseAmountInputProps = {
-  // biome-ignore lint/suspicious/noExplicitAny: react-hook-form Control generic is provided by caller
-  control: Control<any>
+  control: Control<ExpenseReportFormValues>
   name: `expenses.${number}.amount`
   currencyName: `expenses.${number}.currency`
+  dateName: `expenses.${number}.date`
   label: string
+  t: (key: string, options?: Record<string, string | number>) => string
   /** Locale for formatting (e.g. from selected country). Falls back to browser language. */
   displayLocale?: string
 }
@@ -197,29 +206,72 @@ function ExpenseAmountInput({
   control,
   name,
   currencyName,
+  dateName,
   label,
+  t,
   displayLocale: displayLocaleProp,
 }: ExpenseAmountInputProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [localValue, setLocalValue] = useState("")
 
-  const selectedCurrencyCode = useWatch({ control, name: currencyName })
-  const symbol =
-    selectedCurrencyCode && typeof selectedCurrencyCode === "string"
-      ? getSymbolFromCurrency(selectedCurrencyCode)
-      : ""
+  // FieldPath is now specific to expense items, so useWatch can properly infer the return type
+  const selectedCurrencyCode = useWatch({
+    control,
+    name: currencyName,
+  })
+  const selectedDate = useWatch({
+    control,
+    name: dateName,
+  })
+  const amount = useWatch({ control, name })
+  const symbol = selectedCurrencyCode
+    ? getSymbolFromCurrency(selectedCurrencyCode)
+    : ""
+
+  const dateKey = selectedDate ? selectedDate.toISOString().slice(0, 10) : ""
+
+  const exchangeRateQueryEnabled = Boolean(
+    selectedCurrencyCode &&
+      selectedCurrencyCode !== "NOK" &&
+      selectedDate &&
+      (amount ?? 0) > 0,
+  )
+
+  const { data: rateData } = useQuery({
+    queryKey: [
+      "norgesBankExchangeRate",
+      selectedCurrencyCode,
+      dateKey,
+    ] as const,
+    queryFn: () => {
+      if (!selectedCurrencyCode || !selectedDate) {
+        return Promise.resolve(null)
+      }
+      return fetchExchangeRateData(selectedCurrencyCode, selectedDate)
+    },
+    enabled: exchangeRateQueryEnabled,
+    staleTime: 1000 * 60 * 60,
+  })
+
+  const exchangeRateInfo = exchangeRateDisplayInfo(
+    selectedCurrencyCode,
+    selectedDate,
+    amount ?? 0,
+    rateData,
+  )
 
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => {
+        const amountValue = field.value
         const displayLocale =
           displayLocaleProp ||
           (typeof navigator !== "undefined" ? navigator.language : "en-GB")
         const displayValue = isFocused
           ? localValue
-          : formatAmountDisplay(field.value ?? 0, displayLocale)
+          : formatAmountDisplay(amountValue ?? 0, displayLocale)
 
         return (
           <FormItem>
@@ -240,8 +292,8 @@ function ExpenseAmountInput({
                   onFocus={() => {
                     setIsFocused(true)
                     setLocalValue(
-                      field.value != null && field.value !== 0
-                        ? formatAmountDisplay(field.value, displayLocale)
+                      amountValue != null && amountValue !== 0
+                        ? formatAmountDisplay(amountValue, displayLocale)
                         : "",
                     )
                   }}
@@ -263,6 +315,27 @@ function ExpenseAmountInput({
                 </span>
               ) : null}
             </div>
+            {exchangeRateInfo && (
+              <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
+                <div>
+                  {t("expense.exchangeRate", {
+                    date: formatDate(exchangeRateInfo.date),
+                    rate: formatExchangeRate(
+                      exchangeRateInfo.rate,
+                      exchangeRateInfo.unitMultiplier,
+                    ),
+                  })}
+                </div>
+                <div className="font-medium text-foreground">
+                  {t("expense.youGetBack", {
+                    amount: formatAmountDisplay(
+                      exchangeRateInfo.nokAmount,
+                      "nb-NO",
+                    ),
+                  })}
+                </div>
+              </div>
+            )}
             <FormMessage />
           </FormItem>
         )
@@ -299,8 +372,9 @@ export default function ExpensePage() {
       bankRoutingNumber: initialFormValues.bankRoutingNumber,
       bankAccountNumber: initialFormValues.bankAccountNumber,
       bankAccountType:
-        (initialFormValues.bankAccountType as "checking" | "savings") ||
-        "checking",
+        initialFormValues.bankAccountType === "savings"
+          ? ("savings" as const)
+          : ("checking" as const),
       bankSwiftBic: initialFormValues.bankSwiftBic,
       bankName: initialFormValues.bankName,
       bankAddress: initialFormValues.bankAddress,
@@ -335,7 +409,9 @@ export default function ExpensePage() {
       ...form.getValues(),
       ...parsed,
       bankAccountType:
-        (parsed.bankAccountType as "checking" | "savings") || "checking",
+        parsed.bankAccountType === "savings"
+          ? ("savings" as const)
+          : ("checking" as const),
     })
   }, [form, i18n])
 
@@ -717,10 +793,10 @@ export default function ExpensePage() {
                                   )}
                                 >
                                   {field.value ? (
-                                    format(field.value, "PPP", {
-                                      locale:
-                                        i18n.language === "no" ? nb : enGB,
-                                    })
+                                    formatDateLong(
+                                      field.value,
+                                      i18n.language === "no" ? "no" : "en",
+                                    )
                                   ) : (
                                     <span>{t("expense.selectDate")}</span>
                                   )}
@@ -754,7 +830,9 @@ export default function ExpensePage() {
                       control={form.control}
                       name={`expenses.${index}.amount`}
                       currencyName={`expenses.${index}.currency`}
+                      dateName={`expenses.${index}.date`}
                       label={t("expense.amount")}
+                      t={t}
                       displayLocale={amountDisplayLocale}
                     />
 
@@ -866,15 +944,7 @@ export default function ExpensePage() {
             >
               <a
                 target="_blank"
-                href={`mailto:${targetEmail}?subject=Utlegg ${form.getValues("expenses")[0]?.date?.toLocaleDateString("sv") || new Date().toLocaleDateString("sv")} - ${form.getValues("name")}&body=${encodeURIComponent(`Hei, jeg har gjort utlegg for ${form
-                  .getValues("expenses")
-                  .map((expense) => expense.description)
-                  .join(", ")}.
-
-Vedlagt er en PDF-fil med utleggene.
-
-Med vennlig hilsen,
-${form.getValues("name")}`)}`}
+                href={`mailto:${targetEmail}?subject=${encodeURIComponent(`Utlegg - ${form.getValues("name")}`)}&body=${encodeURIComponent(`Hei,\n\nVedlagt er utleggsrapport.\n\nMed vennlig hilsen,\n${form.getValues("name")}`)}`}
                 rel="noopener"
               >
                 <Mail className="h-4 w-4" />

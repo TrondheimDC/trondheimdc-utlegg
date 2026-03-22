@@ -62,6 +62,8 @@
     "addExpense": "Add Expense",
     "description": "Description",
     "amount": "Amount (incl. VAT)",
+    "exchangeRate": "Exchange rate from Norges Bank ({{date}}): {{rate}}",
+    "youGetBack": "You will get back {{amount}} kr",
     "currency": "Currency",
     "selectCurrency": "Select currency",
     "attachment": "Document",
