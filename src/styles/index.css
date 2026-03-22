@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
+/* Tweak for 1Password filled inputs in dark theme, due to a known issue */
+.dark input[data-com-onepassword-filled="light"] {
+  color: #000000;
+}
 
 /* Light theme - TDC brand colors adapted for light mode */
 :root {
