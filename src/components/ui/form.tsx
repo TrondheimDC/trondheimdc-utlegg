@@ -135,10 +135,22 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
+export type TranslatedErrorMessage =
+  | string
+  | { key: string; params?: Record<string, unknown> }
+
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField()
   const { t } = useTranslation("common")
-  const body = error ? t(`expense.${error.message}`) : props.children
+
+  const body = (() => {
+    if (!error) return props.children
+    const msg = error.message as TranslatedErrorMessage
+    if (typeof msg === "object" && msg !== null && "key" in msg) {
+      return t(`expense.${msg.key}`, msg.params ?? {})
+    }
+    return t(`expense.${msg}`)
+  })()
 
   if (!body) {
     return null

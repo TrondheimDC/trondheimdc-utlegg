@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  type TranslatedErrorMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
@@ -130,29 +131,23 @@ export function BankDetailsForm({
         result.expectedLength != null &&
         result.actualLength != null
       ) {
-        return bankCountryName
-          ? t("expense.invalidIbanLength", {
-              expectedLength: result.expectedLength,
-              actualLength: result.actualLength,
-              countryName: bankCountryName,
-            })
-          : t("expense.invalidIbanLengthGeneric", {
-              expectedLength: result.expectedLength,
-              actualLength: result.actualLength,
-            })
+        return {
+          key: "errors.invalidIbanLength",
+          params: {
+            expectedLength: result.expectedLength,
+            actualLength: result.actualLength,
+          },
+        }
       }
       if (result.errorType === "checksum") {
-        return (
-          t("expense.invalidAccountGeneric") +
-          " " +
-          t("expense.validationOverridePrompt")
-        )
+        return {
+          key: "errors.invalidAccount",
+          params: {},
+        }
       }
-      return bankCountryName
-        ? t("expense.invalidIbanFormat", { countryName: bankCountryName })
-        : t("expense.invalidIbanFormatGeneric")
+      return { key: "errors.invalidIbanFormat", params: {} }
     },
-    [bankCountryName, t],
+    [],
   )
 
   const handleSkipToggle = React.useCallback(
@@ -169,7 +164,9 @@ export function BankDetailsForm({
             })
           } else if (type === "sepa") {
             form.setError("bankIban", {
-              message: getIbanErrorMessage(validationResult),
+              message: getIbanErrorMessage(
+                validationResult,
+              ) as unknown as string,
             })
           }
         }
@@ -243,7 +240,7 @@ export function BankDetailsForm({
                 if (skipValidation) return
                 if (cleaned && !validateBIC(cleaned)) {
                   form.setError("bankSwiftBic", {
-                    message: t("expense.errors.invalidSwift"),
+                    message: "errors.invalidSwift",
                   })
                   setOtherValidationFailed(true)
                 } else {
@@ -290,7 +287,7 @@ export function BankDetailsForm({
                       form.clearErrors("bankAccountNumber")
                     } else {
                       form.setError("bankAccountNumber", {
-                        message: t("expense.invalidNorwegianAccountDetail"),
+                        message: "invalidNorwegianAccountDetail",
                       })
                     }
                   }}
@@ -359,7 +356,9 @@ export function BankDetailsForm({
                         form.clearErrors("bankIban")
                       } else {
                         form.setError("bankIban", {
-                          message: getIbanErrorMessage(result),
+                          message: getIbanErrorMessage(
+                            result,
+                          ) as unknown as string,
                         })
                       }
                     }}
@@ -394,7 +393,7 @@ export function BankDetailsForm({
                         if (skipValidation) return
                         if (digits && !validateABARoutingNumber(digits)) {
                           form.setError("bankRoutingNumber", {
-                            message: t("expense.errors.invalidRoutingNumber"),
+                            message: "errors.invalidRoutingNumber",
                           })
                           setOtherValidationFailed(true)
                         } else {

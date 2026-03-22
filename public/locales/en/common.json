@@ -72,12 +72,6 @@
     "emailCopied": "Copied",
     "selectDate": "Select a date",
     "invalidNorwegianAccountDetail": "Invalid Norwegian account number. Please check that the number is correct (11 digits with valid checksum).",
-    "invalidIbanFormat": "Invalid format. Expected {{countryName}} IBAN format.",
-    "invalidIbanFormatGeneric": "Invalid format. Expected IBAN format (XXkk BBBB...).",
-    "invalidIbanLength": "Wrong length. Expected {{expectedLength}} characters for {{countryName}} IBAN, got {{actualLength}}.",
-    "invalidIbanLengthGeneric": "Wrong length. Expected {{expectedLength}} characters, got {{actualLength}}.",
-    "invalidAccountGeneric": "Bank account information could not be validated. Something is likely wrong.",
-    "validationOverridePrompt": "You can disable validation if you're sure the details are correct.",
     "skipValidationLabel": "I accept that validation failed, and that reimbursement might be delayed if the account number is incorrect",
     "errors": {
       "descriptionRequired": "Description is required",
@@ -104,7 +98,10 @@
       "invalidNorwegianAccount": "Invalid Norwegian account number",
       "invalidRoutingNumber": "Invalid routing number (ABA). Must be 9 digits.",
       "invalidUsAccountNumber": "Invalid account number. Must be between 4 and 17 digits.",
-      "invalidSwift": "Invalid SWIFT/BIC code"
+      "invalidSwift": "Invalid SWIFT/BIC code",
+      "invalidIbanFormat": "Invalid format. Expected IBAN format",
+      "invalidIbanLength": "Wrong length. Expected {{expectedLength}} characters for selected country's IBAN, got {{actualLength}}.",
+      "invalidIbanChecksum": "Invalid IBAN checksum."
     }
   },
   "fileUploader": {

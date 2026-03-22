@@ -72,12 +72,6 @@
     "emailCopied": "Kopiert",
     "selectDate": "Velg en dato",
     "invalidNorwegianAccountDetail": "Ugyldig norsk kontonummer. Sjekk at nummeret er korrekt (11 siffer med gyldig kontrollsiffer).",
-    "invalidIbanFormat": "Ugyldig format. Forventet {{countryName}} IBAN-format.",
-    "invalidIbanFormatGeneric": "Ugyldig format. Forventet IBAN-format (XXkk BBBB...).",
-    "invalidIbanLength": "Feil lengde. Forventet {{expectedLength}} tegn for {{countryName}} IBAN, fikk {{actualLength}}.",
-    "invalidIbanLengthGeneric": "Feil lengde. Forventet {{expectedLength}} tegn, fikk {{actualLength}}.",
-    "invalidAccountGeneric": "Bankkontoinformasjon kunne ikke valideres. Sannsynligvis er noe feil.",
-    "validationOverridePrompt": "Du kan deaktivere valideringen hvis du er sikker på at opplysningene er riktige.",
     "skipValidationLabel": "Jeg godtar at valideringen feilet, og at utbetaling kan bli forsinket hvis nummeret er feil",
     "errors": {
       "descriptionRequired": "Beskrivelse er påkrevd",
@@ -104,7 +98,10 @@
       "invalidNorwegianAccount": "Ugyldig norsk kontonummer",
       "invalidRoutingNumber": "Ugyldig routing number (ABA). Må være 9 siffer.",
       "invalidUsAccountNumber": "Ugyldig kontonummer. Må være mellom 4 og 17 siffer.",
-      "invalidSwift": "Ugyldig SWIFT/BIC-kode"
+      "invalidSwift": "Ugyldig SWIFT/BIC-kode",
+      "invalidIbanFormat": "Ugyldig format. Forventet IBAN-format.",
+      "invalidIbanLength": "Feil lengde. Forventet {{expectedLength}} tegn for det valgte landets IBAN, fikk {{actualLength}}.",
+      "invalidIbanChecksum": "Ugyldig IBAN-sjekksum."
     }
   },
   "fileUploader": {
