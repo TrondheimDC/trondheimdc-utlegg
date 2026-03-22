@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { getSymbolFromCurrency } from "country-data-list"
 import { format } from "date-fns"
-import { nb } from "date-fns/locale"
+import { enGB, nb } from "date-fns/locale"
 import { CalendarIcon, Check, Copy, Mail, Plus, Trash2 } from "lucide-react"
 import React, { useState } from "react"
 import { type Control, useFieldArray, useForm, useWatch } from "react-hook-form"
@@ -699,7 +699,7 @@ export default function ExpensePage() {
                     )}
                   />
 
-                  <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-[auto_1fr_auto]">
+                  <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start">
                     <FormField
                       control={form.control}
                       name={`expenses.${index}.date`}
@@ -719,7 +719,7 @@ export default function ExpensePage() {
                                   {field.value ? (
                                     format(field.value, "PPP", {
                                       locale:
-                                        i18n.language === "no" ? nb : undefined,
+                                        i18n.language === "no" ? nb : enGB,
                                     })
                                   ) : (
                                     <span>{t("expense.selectDate")}</span>
@@ -736,7 +736,7 @@ export default function ExpensePage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                locale={i18n.language === "no" ? nb : undefined}
+                                locale={i18n.language === "no" ? nb : enGB}
                                 disabled={(date) =>
                                   date > new Date() ||
                                   date < new Date("2020-01-01")
