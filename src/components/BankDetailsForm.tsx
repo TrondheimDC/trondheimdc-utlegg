@@ -27,7 +27,7 @@ import {
   getBankCountryType,
   validateABARoutingNumber,
   validateBIC,
-} from "@/lib/expense"
+} from "@/lib/banking"
 import { Country, CountryDropdown } from "./ui/country-dropdown"
 
 type BankDetailsFormProps = {

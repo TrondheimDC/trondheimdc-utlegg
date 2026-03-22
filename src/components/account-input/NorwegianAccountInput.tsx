@@ -4,7 +4,7 @@ import { banks } from "@/data/NorwegianBanks"
 import {
   formatNorwegianBBANForDisplay,
   validateNorwegianBBAN,
-} from "@/lib/expense"
+} from "@/lib/banking"
 import { BankLogo } from "./BankLogo"
 import type { AccountInputBaseProps, AccountValidationResult } from "./types"
 
@@ -72,7 +72,7 @@ export const NorwegianAccountInput = React.forwardRef<
   return (
     <div className="relative w-full">
       <div className="relative">
-        <div className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2">
+        <div className="pointer-events-none absolute left-3 top-1/2 z-1 -translate-y-1/2">
           <BankLogo bank={bank} />
         </div>
         <NumberFormatBase

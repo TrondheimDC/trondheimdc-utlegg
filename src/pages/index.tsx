@@ -34,16 +34,20 @@ import {
   getDisplayLocaleFromCountry,
 } from "@/lib/country"
 import {
-  createExpenseSchemas,
-  type ExpenseReportFormValues,
-  exchangeRateDisplayInfo,
-  fetchExchangeRateData,
   formatDate,
   formatDateLong,
+} from "@/lib/date-format"
+import {
+  exchangeRateDisplayInfo,
+  fetchExchangeRateData,
   formatExchangeRate,
-} from "@/lib/expense"
+} from "@/lib/exchange-rates"
+import {
+  createExpenseSchemas,
+  type ExpenseReportFormValues,
+} from "@/lib/expense-schema"
 import { generatePDF } from "@/lib/pdf"
-import { cn } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 
 const LOGO_URL = "/img/logos/TDC_white.png"
 let cachedLogoBytes: ArrayBuffer | undefined | null = null
@@ -170,15 +174,6 @@ type ExpenseAmountInputProps = {
   displayLocale?: string
 }
 
-function formatAmountDisplay(value: number, locale: string): string {
-  if (value === 0) return ""
-  const formatter = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  return formatter.format(value)
-}
-
 function parseAmountInput(raw: string): number {
   const trimmed = raw.trim().replace(/\s/g, "")
   if (trimmed === "" || trimmed === "." || trimmed === ",") return 0
@@ -271,7 +266,9 @@ function ExpenseAmountInput({
           (typeof navigator !== "undefined" ? navigator.language : "en-GB")
         const displayValue = isFocused
           ? localValue
-          : formatAmountDisplay(amountValue ?? 0, displayLocale)
+          : amountValue
+            ? formatCurrency(amountValue, displayLocale)
+            : ""
 
         return (
           <FormItem>
@@ -293,7 +290,7 @@ function ExpenseAmountInput({
                     setIsFocused(true)
                     setLocalValue(
                       amountValue != null && amountValue !== 0
-                        ? formatAmountDisplay(amountValue, displayLocale)
+                        ? formatCurrency(amountValue, displayLocale)
                         : "",
                     )
                   }}
@@ -328,10 +325,7 @@ function ExpenseAmountInput({
                 </div>
                 <div className="font-medium text-foreground">
                   {t("expense.youGetBack", {
-                    amount: formatAmountDisplay(
-                      exchangeRateInfo.nokAmount,
-                      "nb-NO",
-                    ),
+                    amount: formatCurrency(exchangeRateInfo.nokAmount, "nb-NO"),
                   })}
                 </div>
               </div>

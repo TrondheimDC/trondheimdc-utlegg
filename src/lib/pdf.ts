@@ -1,15 +1,17 @@
 import { PDFDocument, PDFImage, rgb, StandardFonts } from "pdf-lib"
 import { z } from "zod"
 import {
-  createExpenseSchemas,
-  fetchExchangeRateData,
-  formatDate,
-  formatExchangeRate,
   formatIBANForDisplay,
   formatNorwegianBBANForDisplay,
   getBankCountryType,
+} from "@/lib/banking"
+import { formatDate } from "@/lib/date-format"
+import {
+  fetchExchangeRateData,
+  formatExchangeRate,
   nokAmountFromExchangeRateData,
-} from "@/lib/expense"
+} from "@/lib/exchange-rates"
+import { createExpenseSchemas } from "@/lib/expense-schema"
 import { formatCurrency } from "./utils"
 
 function bankDetailsLines(
