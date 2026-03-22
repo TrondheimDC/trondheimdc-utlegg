@@ -159,16 +159,19 @@ export function exchangeRateDisplayInfo(
   }
 }
 
-/** Format an exchange rate for display (4 decimal places, Norwegian locale). */
+/**
+ * Format the quoted OBS_VALUE from Norges Bank (nb-NO).
+ * Per-unit quotes (multiplier 1) need more precision; per-100 quotes are shown with 2 decimals.
+ */
 export function formatExchangeRate(
   rate: number,
   unitMultiplier: number,
 ): string {
-  const normalizedRate = rate / unitMultiplier
+  const fractionDigits = unitMultiplier === 100 ? 2 : 4
   return new Intl.NumberFormat("nb-NO", {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4,
-  }).format(normalizedRate)
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(rate)
 }
 
 /** Format a Date as "YYYY-MM-DD" using local date parts (no timezone shift). */

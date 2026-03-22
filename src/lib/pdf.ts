@@ -433,19 +433,28 @@ export async function generatePDF({
 
     const amountText = formatCurrency(amountInNOK)
 
-    let exchangeText = "-"
-    if (expense.currency !== "NOK" && rateData) {
-      const base = `${formatCurrency(expense.amount)} ${expense.currency}`
-      exchangeText = `${base} @ ${formatExchangeRate(rateData.rate, rateData.unitMultiplier)} (${formatDate(rateData.rateDate)})`
-    }
+    const exchangeRawLines =
+      expense.currency !== "NOK" && rateData
+        ? [
+            `${formatCurrency(expense.amount)} ${expense.currency}`,
+            `Kurs: ${formatExchangeRate(rateData.rate, rateData.unitMultiplier)} NOK per ${rateData.unitMultiplier} ${expense.currency}`,
+            `Kursdato: ${formatDate(rateData.rateDate)}`,
+          ]
+        : ["-"]
 
     const descriptionLines = wrapToWidth(
       expense.description,
       rebalancedColumns.description.width,
+      regularFont,
+      dataFontSize,
     )
-    const exchangeLines = wrapToWidth(
-      exchangeText,
-      rebalancedColumns.exchange.width,
+    const exchangeLines = exchangeRawLines.flatMap((line) =>
+      wrapToWidth(
+        line,
+        rebalancedColumns.exchange.width,
+        regularFont,
+        dataFontSize,
+      ),
     )
 
     const normalizedDescriptionLines =

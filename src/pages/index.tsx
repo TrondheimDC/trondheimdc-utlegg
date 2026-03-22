@@ -33,10 +33,7 @@ import {
   findCountryByCodeOrName,
   getDisplayLocaleFromCountry,
 } from "@/lib/country"
-import {
-  formatDate,
-  formatDateLong,
-} from "@/lib/date-format"
+import { formatDate, formatDateLong } from "@/lib/date-format"
 import {
   exchangeRateDisplayInfo,
   fetchExchangeRateData,
@@ -321,6 +318,8 @@ function ExpenseAmountInput({
                       exchangeRateInfo.rate,
                       exchangeRateInfo.unitMultiplier,
                     ),
+                    unit: exchangeRateInfo.unitMultiplier,
+                    currency: selectedCurrencyCode,
                   })}
                 </div>
                 <div className="font-medium text-foreground">
