@@ -94,6 +94,7 @@ export const IbanAccountInput = React.forwardRef<
           onValidationChange?.(validate(rawValue))
         }
       }}
+      inputMode="text"
       type="text"
       placeholder={
         (props.placeholder as string | undefined) ?? "e.g. NO93 8601 1117 947"
