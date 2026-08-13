@@ -1,6 +1,14 @@
 "use client"
 
-import { FileText, Upload, X, ZoomIn, ZoomOut } from "lucide-react"
+import {
+  FileText,
+  Maximize,
+  RotateCw,
+  Upload,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react"
 import NextImage from "next/image"
 import * as React from "react"
 import Dropzone, {
@@ -109,7 +117,10 @@ interface CropDialogProps {
 /**
  * Keeps output clear of the per-browser canvas caps (iOS Safari allows roughly
  * 16.7M pixels and 4096px per side, past which `toBlob` returns null and the
- * crop silently never completes).
+ * crop silently never completes). Also used as the cap for a rotate: that's a
+ * full-resolution canvas op too, and staying at this ceiling rather than a
+ * smaller one means rotating doesn't throw away detail a later, smaller crop
+ * selection might still want.
  */
 const MAX_OUTPUT_DIMENSION = 4096
 const OUTPUT_QUALITY = 0.95
@@ -129,17 +140,31 @@ function CropDialog({
   const [imgSrc, setImgSrc] = React.useState("")
   const imgRef = React.useRef<HTMLImageElement>(null)
 
+  // Rotation replaces `imgSrc` with a freshly rendered object URL, so the URL
+  // actually on screen has to be tracked separately from the file: it may no
+  // longer be the one the file effect created.
+  const currentUrlRef = React.useRef<string | null>(null)
+  const showImage = React.useCallback((url: string) => {
+    if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current)
+    currentUrlRef.current = url
+    setImgSrc(url)
+  }, [])
+
   React.useEffect(() => {
     if (!file) return
 
     // The dialog is not unmounted between files, so clear the previous
     // selection rather than briefly applying it to the new image.
     setCrop(undefined)
+    showImage(URL.createObjectURL(file))
 
-    const objectUrl = URL.createObjectURL(file)
-    setImgSrc(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
-  }, [file])
+    return () => {
+      if (currentUrlRef.current) {
+        URL.revokeObjectURL(currentUrlRef.current)
+        currentUrlRef.current = null
+      }
+    }
+  }, [file, showImage])
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const crop = {
@@ -151,6 +176,46 @@ function CropDialog({
     } as const
 
     setCrop(crop)
+  }
+
+  // Bakes the turn into the actual pixels rather than a CSS transform, so the
+  // crop below keeps mapping percentages onto natural width/height exactly as
+  // it already does — no separate coordinate space to account for rotation in.
+  async function rotateImage() {
+    const image = imgRef.current
+    if (!image) return
+
+    const scale = Math.min(
+      1,
+      MAX_OUTPUT_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight),
+    )
+    const drawWidth = Math.round(image.naturalWidth * scale)
+    const drawHeight = Math.round(image.naturalHeight * scale)
+
+    const canvas = document.createElement("canvas")
+    canvas.width = drawHeight
+    canvas.height = drawWidth
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    ctx.translate(canvas.width / 2, canvas.height / 2)
+    ctx.rotate(Math.PI / 2)
+    ctx.imageSmoothingQuality = "high"
+    ctx.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight)
+
+    // PNG, not JPEG: this is a working copy that may be rotated several times
+    // before the user is done, and JPEG would compound generation loss on
+    // every turn. The final crop below is still the one lossy encode.
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/png")
+    })
+    if (!blob) return
+
+    // The image's dimensions just changed, so any existing selection is
+    // meaningless against it — reset rather than remap.
+    setCrop(undefined)
+    showImage(URL.createObjectURL(blob))
   }
 
   async function cropImage() {
@@ -278,6 +343,22 @@ function CropDialog({
                     variant="outline"
                     size="icon"
                     className="size-8"
+                    onClick={() => {
+                      // The rotated image is a different size, so the old
+                      // zoom/pan no longer frames it usefully.
+                      void rotateImage().then(() => resetTransform())
+                    }}
+                  >
+                    <RotateCw className="size-4" />
+                    <span className="sr-only">
+                      {t("fileUploader.crop.rotate")}
+                    </span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
                     onClick={() => zoomOut()}
                   >
                     <ZoomOut className="size-4" />
@@ -292,13 +373,7 @@ function CropDialog({
                     className="size-8"
                     onClick={() => resetTransform()}
                   >
-                    <NextImage
-                      src={imgSrc}
-                      alt={t("fileUploader.crop.resetZoomAlt")}
-                      width={16}
-                      height={16}
-                      className="size-4 object-cover"
-                    />
+                    <Maximize className="size-4" />
                     <span className="sr-only">
                       {t("fileUploader.crop.resetZoom")}
                     </span>
@@ -685,13 +760,7 @@ function FilePreview({ file }: FilePreviewProps) {
                         className="size-8"
                         onClick={() => resetTransform()}
                       >
-                        <NextImage
-                          src={preview}
-                          alt={file.name}
-                          width={16}
-                          height={16}
-                          className="size-4 object-cover"
-                        />
+                        <Maximize className="size-4" />
                         <span className="sr-only">
                           {t("fileUploader.crop.resetZoom")}
                         </span>

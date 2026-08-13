@@ -111,9 +111,9 @@
     "crop": {
       "title": "Crop Image",
       "imageAlt": "Image preview",
+      "rotate": "Rotate 90 degrees",
       "zoomOut": "Zoom out",
       "resetZoom": "Reset zoom",
-      "resetZoomAlt": "Reset zoom",
       "zoomIn": "Zoom in",
       "cancel": "Cancel",
       "confirm": "Crop & Continue"
