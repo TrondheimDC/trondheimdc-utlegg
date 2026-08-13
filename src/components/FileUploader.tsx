@@ -106,6 +106,18 @@ interface CropDialogProps {
   onCropComplete: (croppedFile: File) => void
 }
 
+/**
+ * Keeps output clear of the per-browser canvas caps (iOS Safari allows roughly
+ * 16.7M pixels and 4096px per side, past which `toBlob` returns null and the
+ * crop silently never completes).
+ */
+const MAX_OUTPUT_DIMENSION = 4096
+const OUTPUT_QUALITY = 0.95
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
 function CropDialog({
   file,
   isOpen,
@@ -119,6 +131,10 @@ function CropDialog({
 
   React.useEffect(() => {
     if (!file) return
+
+    // The dialog is not unmounted between files, so clear the previous
+    // selection rather than briefly applying it to the new image.
+    setCrop(undefined)
 
     const objectUrl = URL.createObjectURL(file)
     setImgSrc(objectUrl)
@@ -140,68 +156,72 @@ function CropDialog({
   async function cropImage() {
     if (!file) return
 
-    if (!imgRef.current || !crop) return
-    if (crop?.width === 0 || crop?.height === 0) {
+    const image = imgRef.current
+    if (!image) return
+
+    // Nothing meaningful selected — pass the original through untouched.
+    if (!crop || crop.width <= 0 || crop.height <= 0) {
       onCropComplete(file)
       onOpenChange(false)
       return
     }
 
-    const image = imgRef.current
+    const { naturalWidth, naturalHeight } = image
+
+    // A percent crop is relative to the rendered image, which makes it directly
+    // proportional to the natural size. Going through the rendered pixel size
+    // instead skews the result whenever the rendered box aspect drifts from the
+    // natural one — `image.width`/`image.height` are integers, so tall images
+    // amplify that rounding into a visibly wrong vertical offset.
+    const sx = clamp((crop.x / 100) * naturalWidth, 0, naturalWidth)
+    const sy = clamp((crop.y / 100) * naturalHeight, 0, naturalHeight)
+    const sWidth = clamp(
+      (crop.width / 100) * naturalWidth,
+      1,
+      naturalWidth - sx,
+    )
+    const sHeight = clamp(
+      (crop.height / 100) * naturalHeight,
+      1,
+      naturalHeight - sy,
+    )
+
+    // Never upscales — a small selection stays its own size.
+    const scale = Math.min(1, MAX_OUTPUT_DIMENSION / Math.max(sWidth, sHeight))
+
     const canvas = document.createElement("canvas")
+    canvas.width = Math.max(1, Math.round(sWidth * scale))
+    canvas.height = Math.max(1, Math.round(sHeight * scale))
+
     const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    // Get the scaling factor between displayed size and natural size
-    const scaleX = image.naturalWidth / image.width
-    const scaleY = image.naturalHeight / image.height
-
-    // Calculate the actual dimensions of the displayed image
-    const displayedWidth = image.width
-    const displayedHeight =
-      (image.naturalHeight / image.naturalWidth) * displayedWidth
-
-    // Convert percentage values to pixels based on the displayed dimensions
-    const pixelCrop = {
-      x: (crop.x * displayedWidth) / 100,
-      y: (crop.y * displayedHeight) / 100,
-      width: (crop.width * displayedWidth) / 100,
-      height: (crop.height * displayedHeight) / 100,
+    if (!ctx) {
+      onCropComplete(file)
+      onOpenChange(false)
+      return
     }
 
-    // Set canvas dimensions to the actual crop size in natural image coordinates
-    canvas.width = pixelCrop.width * scaleX
-    canvas.height = pixelCrop.height * scaleY
-
+    ctx.imageSmoothingQuality = "high"
     ctx.drawImage(
       image,
-      pixelCrop.x * scaleX,
-      pixelCrop.y * scaleY,
-      pixelCrop.width * scaleX,
-      pixelCrop.height * scaleY,
+      sx,
+      sy,
+      sWidth,
+      sHeight,
       0,
       0,
       canvas.width,
       canvas.height,
     )
 
-    // Convert canvas to blob
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) resolve(blob)
-        },
-        "image/jpeg",
-        0.95,
-      )
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", OUTPUT_QUALITY)
     })
 
-    // Create new file from blob
-    const croppedFile = new File([blob], file.name, {
-      type: "image/jpeg",
-    })
-
-    onCropComplete(croppedFile)
+    // toBlob can still fail (memory pressure, tainted canvas). Fall back to the
+    // original file rather than silently dropping the receipt.
+    onCropComplete(
+      blob ? new File([blob], file.name, { type: "image/jpeg" }) : file,
+    )
     onOpenChange(false)
   }
 
@@ -211,7 +231,7 @@ function CropDialog({
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>{t("fileUploader.crop.title")}</DialogTitle>
         </DialogHeader>
-        <div className="relative flex-1 min-h-[20vh] w-full overflow-hidden">
+        <div className="relative flex-1 min-h-0 w-full overflow-hidden">
           <TransformWrapper
             initialScale={1}
             minScale={1}
@@ -230,7 +250,17 @@ function CropDialog({
                     onChange={(_crop: Crop, percentCrop: Crop) =>
                       setCrop(percentCrop)
                     }
-                    className="flex max-h-full max-w-full items-center justify-center"
+                    /*
+                      The height cap belongs here, not on the <img>: ReactCrop's
+                      own `.ReactCrop__child-wrapper > img { max-height: inherit }`
+                      outranks any class on the image, so it has to cascade down
+                      from this element. It also has to be a *definite* length —
+                      `max-h-full` resolves against an auto-height wrapper, so it
+                      is dropped and a tall image renders at full natural height,
+                      overflowing into `overflow: hidden` with most of the crop
+                      area scrolled out of reach.
+                    */
+                    className="flex max-h-[60vh] max-w-full items-center justify-center"
                   >
                     {/* biome-ignore lint/performance/noImgElement: cropping requires direct access to underlying img element */}
                     <img
@@ -238,7 +268,7 @@ function CropDialog({
                       src={imgSrc}
                       alt={t("fileUploader.crop.imageAlt")}
                       onLoad={onImageLoad}
-                      className="max-h-full max-w-full w-auto h-auto object-contain"
+                      className="h-auto w-auto object-contain"
                     />
                   </ReactCrop>
                 </TransformComponent>
@@ -329,9 +359,38 @@ export function FileUploader(props: FileUploaderProps) {
 
   const [cropDialogFile, setCropDialogFile] = React.useState<File | null>(null)
 
+  const addFiles = React.useCallback(
+    async (newFiles: File[]) => {
+      if (newFiles.length === 0) return
+
+      const updatedFiles = files ? [...files, ...newFiles] : newFiles
+
+      setFiles(updatedFiles)
+
+      if (onUpload && updatedFiles.length <= maxFileCount) {
+        try {
+          await onUpload(updatedFiles)
+        } catch (error) {
+          console.error("Upload failed:", error)
+        }
+      }
+    },
+    [files, maxFileCount, onUpload, setFiles],
+  )
+
   const onDrop = React.useCallback(
     async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
-      setErrorMessage(null)
+      // Reported before any early return below, so a rejection is never hidden
+      // by the crop dialog opening for an accepted file in the same drop.
+      setErrorMessage(
+        rejectedFiles.length > 0
+          ? t("fileUploader.errors.fileRejected", {
+              fileName: rejectedFiles.map(({ file }) => file.name).join(", "),
+            })
+          : null,
+      )
+
+      if (acceptedFiles.length === 0) return
 
       if (!multiple && maxFileCount === 1 && acceptedFiles.length > 1) {
         setErrorMessage(t("fileUploader.errors.singleFile"))
@@ -346,8 +405,9 @@ export function FileUploader(props: FileUploaderProps) {
       }
 
       // Open crop dialog for the first image
-      if (acceptedFiles[0]?.type.startsWith("image/")) {
-        setCropDialogFile(acceptedFiles[0])
+      const [first] = acceptedFiles
+      if (first?.type.startsWith("image/")) {
+        setCropDialogFile(first)
         return
       }
 
@@ -357,32 +417,9 @@ export function FileUploader(props: FileUploaderProps) {
         }),
       )
 
-      const updatedFiles = files ? [...files, ...newFiles] : newFiles
-
-      setFiles(updatedFiles)
-
-      if (rejectedFiles.length > 0) {
-        // biome-ignore lint/complexity/noForEach: simple iteration over small rejection list
-        rejectedFiles.forEach(({ file }) => {
-          setErrorMessage(
-            t("fileUploader.errors.fileRejected", { fileName: file.name }),
-          )
-        })
-      }
-
-      if (
-        onUpload &&
-        updatedFiles.length > 0 &&
-        updatedFiles.length <= maxFileCount
-      ) {
-        try {
-          await onUpload(updatedFiles)
-        } catch (error) {
-          console.error("Upload failed:", error)
-        }
-      }
+      await addFiles(newFiles)
     },
-    [files, maxFileCount, multiple, onUpload, setFiles, t],
+    [addFiles, files, maxFileCount, multiple, t],
   )
 
   function onRemove(index: number) {
@@ -408,11 +445,18 @@ export function FileUploader(props: FileUploaderProps) {
   const isDisabled = disabled || (files?.length ?? 0) >= maxFileCount
 
   const handleCropComplete = (croppedFile: File) => {
-    const newFiles = [croppedFile]
-    setFiles(files ? [...files, ...newFiles] : newFiles)
-    if (onUpload) {
-      onUpload(newFiles).catch(console.error)
+    // The crop re-encodes the image, so the size the dropzone validated no
+    // longer applies to what we are actually about to hand over.
+    if (maxSize !== undefined && croppedFile.size > maxSize) {
+      setErrorMessage(
+        t("fileUploader.errors.fileRejected", { fileName: croppedFile.name }),
+      )
+      setCropDialogFile(null)
+      return
     }
+
+    void addFiles([croppedFile])
+    setCropDialogFile(null)
   }
 
   return (
@@ -603,12 +647,20 @@ function FilePreview({ file }: FilePreviewProps) {
                       wrapperClass="!w-full !h-full"
                       contentClass="!w-full !h-full flex items-center justify-center"
                     >
+                      {/*
+                        Definite cap, for the same reason as the crop dialog:
+                        the dialog only sets `max-h-[90vh]`, and a max-height
+                        does not make a height definite, so `max-h-full` here
+                        resolved against an indefinite parent and was dropped —
+                        leaving a tall receipt at natural height, clipped by
+                        `overflow: hidden` with only its top visible.
+                      */}
                       <NextImage
                         src={preview}
                         alt={file.name}
                         width={1200}
                         height={800}
-                        className="max-h-full max-w-full w-auto h-auto object-contain"
+                        className="max-h-[70vh] max-w-full w-auto h-auto object-contain"
                         loading="lazy"
                         unoptimized
                       />

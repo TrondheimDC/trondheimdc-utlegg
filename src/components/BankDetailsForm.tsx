@@ -130,7 +130,7 @@ export function BankDetailsForm({
       }
       if (result.errorType === "checksum") {
         return {
-          key: "errors.invalidAccount",
+          key: "errors.invalidIbanChecksum",
           params: {},
         }
       }
