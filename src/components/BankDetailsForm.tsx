@@ -28,6 +28,7 @@ import {
   validateABARoutingNumber,
   validateBIC,
 } from "@/lib/banking"
+import { resolvePayoutCurrency } from "@/lib/currency-country"
 import { Country, CountryDropdown } from "./ui/country-dropdown"
 
 type BankDetailsFormProps = {
@@ -67,6 +68,10 @@ export function BankDetailsForm({
 
   const type = bankCountryIso2 ? getBankCountryType(bankCountryIso2) : "sepa"
   const previousTypeRef = React.useRef(type)
+  const targetCurrency = useWatch({
+    control: form.control,
+    name: "targetCurrency",
+  })
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: we intentionally reset when international mode or form changes
   useEffect(() => {
@@ -308,6 +313,11 @@ export function BankDetailsForm({
                   field.onChange(alpha3)
                   form.setValue("bankCountryIso2", alpha2)
 
+                  form.setValue(
+                    "targetCurrency",
+                    resolvePayoutCurrency(false, alpha2),
+                  )
+
                   // Only auto-fill personal country if user hasn't touched it AND
                   // the country field is currently empty (wasn't set from URL params)
                   const currentCountry = form.getValues("country")
@@ -324,6 +334,12 @@ export function BankDetailsForm({
           </FormItem>
         )}
       />
+
+      {bankCountryIso2 && targetCurrency && (
+        <p className="text-sm text-muted-foreground">
+          {t("expense.payoutCurrency", { currency: targetCurrency })}
+        </p>
+      )}
 
       {type === "sepa" && (
         <>

@@ -1,20 +1,46 @@
-type ExchangeRateDatum = {
+export type ExchangeRateDatum = {
   rate: number
   unitMultiplier: number
   rateDate: Date
 }
 
 type ExchangeRateDisplayRow = {
-  rate: number
+  /** Cross rate: X targetCurrency per 1 sourceCurrency (for calculation) */
+  crossRate: number
+  /** Original rate from Norges Bank for display */
+  sourceRate: number
+  sourceUnitMultiplier: number
+  targetRate: number
+  targetUnitMultiplier: number
   date: Date
-  nokAmount: number
-  unitMultiplier: number
+  targetAmount: number
+  sourceCurrency: string
+  targetCurrency: string
+}
+
+/**
+ * Calculate cross rate from two Norges Bank rates (both relative to NOK).
+ */
+export function calculateCrossRate(
+  fromRate: ExchangeRateDatum,
+  toRate: ExchangeRateDatum,
+): { rate: number; rateDate: Date; unitMultiplier: number } {
+  const fromNormalized = fromRate.rate / fromRate.unitMultiplier
+  const toNormalized = toRate.rate / toRate.unitMultiplier
+  const crossRate = fromNormalized / toNormalized
+  const rateDate =
+    fromRate.rateDate > toRate.rateDate ? fromRate.rateDate : toRate.rateDate
+  return {
+    rate: crossRate,
+    rateDate,
+    unitMultiplier: 1, // Cross rates are always per-unit
+  }
 }
 
 /**
  * Converts an amount using Norges Bank rate fields (raw rate and UNIT_MULT).
  */
-export function nokAmountFromExchangeRateData(
+export function targetAmountFromExchangeRateData(
   amount: number,
   data: { rate: number; unitMultiplier: number },
 ): number {
@@ -142,20 +168,88 @@ export async function fetchExchangeRateData(
   }
 }
 
+export type ConversionResult = {
+  amount: number
+  rate: number
+  rateDate: Date
+  unitMultiplier: number
+  sourceCurrency: string
+  targetCurrency: string
+}
+
+/**
+ * Converts an amount from one currency to another using Norges Bank rates.
+ * Since Norges Bank rates are relative to NOK, we calculate the cross rate.
+ */
+export async function convertCurrency(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+  expenseDate: Date,
+): Promise<ConversionResult | null> {
+  // If same currency, no conversion needed
+  if (fromCurrency === toCurrency) {
+    return {
+      amount,
+      rate: 1,
+      rateDate: expenseDate,
+      unitMultiplier: 1,
+      sourceCurrency: fromCurrency,
+      targetCurrency: toCurrency,
+    }
+  }
+
+  // Fetch both rates relative to NOK
+  const [fromRate, toRate] = await Promise.all([
+    fetchExchangeRateData(fromCurrency, expenseDate),
+    fetchExchangeRateData(toCurrency, expenseDate),
+  ])
+
+  if (!fromRate || !toRate) {
+    return null
+  }
+
+  const crossRate = calculateCrossRate(fromRate, toRate)
+
+  return {
+    amount: targetAmountFromExchangeRateData(amount, crossRate),
+    rate: crossRate.rate,
+    rateDate: crossRate.rateDate,
+    unitMultiplier: crossRate.unitMultiplier,
+    sourceCurrency: fromCurrency,
+    targetCurrency: toCurrency,
+  }
+}
+
 export function exchangeRateDisplayInfo(
-  currency: string | undefined,
+  sourceCurrency: string | undefined,
+  targetCurrency: string,
   expenseDate: Date | undefined,
   amount: number,
-  rateDatum: ExchangeRateDatum | null | undefined,
+  sourceRate: ExchangeRateDatum | null | undefined,
+  targetRate: ExchangeRateDatum | null | undefined,
 ): ExchangeRateDisplayRow | null {
-  if (!currency || currency === "NOK" || !expenseDate || amount <= 0)
-    return null
-  if (!rateDatum) return null
+  if (!sourceCurrency || !expenseDate || amount <= 0) return null
+
+  // No conversion needed if same currency
+  if (sourceCurrency === targetCurrency) return null
+
+  // Need both rates to calculate cross rate
+  if (!sourceRate || !targetRate) return null
+
+  const crossRate = calculateCrossRate(sourceRate, targetRate)
+  const targetAmount = targetAmountFromExchangeRateData(amount, crossRate)
+
   return {
-    rate: rateDatum.rate,
-    date: rateDatum.rateDate,
-    unitMultiplier: rateDatum.unitMultiplier,
-    nokAmount: nokAmountFromExchangeRateData(amount, rateDatum),
+    crossRate: crossRate.rate,
+    sourceRate: sourceRate.rate,
+    sourceUnitMultiplier: sourceRate.unitMultiplier,
+    targetRate: targetRate.rate,
+    targetUnitMultiplier: targetRate.unitMultiplier,
+    date: crossRate.rateDate,
+    targetAmount,
+    sourceCurrency,
+    targetCurrency,
   }
 }
 

@@ -5,12 +5,9 @@ import {
   formatNorwegianBBANForDisplay,
   getBankCountryType,
 } from "@/lib/banking"
+import { resolvePayoutCurrency } from "@/lib/currency-country"
 import { formatDate } from "@/lib/date-format"
-import {
-  fetchExchangeRateData,
-  formatExchangeRate,
-  nokAmountFromExchangeRateData,
-} from "@/lib/exchange-rates"
+import { convertCurrency, formatExchangeRate } from "@/lib/exchange-rates"
 import { createExpenseSchemas } from "@/lib/expense-schema"
 import { formatCurrency } from "./utils"
 
@@ -123,6 +120,12 @@ export async function generatePDF({
   const gray = rgb(0.92, 0.92, 0.92)
   const borderGray = rgb(0.5, 0.5, 0.5)
 
+  // Payout in the bank country's currency (NOK for Norwegian accounts)
+  const payoutCurrency = resolvePayoutCurrency(
+    residesInNorway ?? true,
+    bankCountryIso2 || "",
+  )
+
   const hasLogo = logoPngBytes != null && logoPngBytes.byteLength > 0
   const headerBarHeight = hasLogo ? 36 : 8
   const headerTop = height - headerBarHeight
@@ -204,6 +207,7 @@ export async function generatePDF({
     { label: "E-post:", value: email },
     { label: "", value: "Bankinformasjon", sectionHeader: true },
     ...bankLines,
+    { label: "Utbetalingsvaluta:", value: payoutCurrency },
   ]
 
   // Section: Rapportinfo
@@ -375,7 +379,7 @@ export async function generatePDF({
     date: "Dato",
     exchange: "Valutakurs",
     exchangeSubtext: "Norges Bank",
-    amount: "Beløp (NOK)",
+    amount: `Beløp (${payoutCurrency})`,
   }
   for (const key of Object.keys(rebalancedColumns) as Array<
     keyof typeof rebalancedColumns
@@ -424,23 +428,42 @@ export async function generatePDF({
       day: "2-digit",
     })
 
-    const rateData = await fetchExchangeRateData(expense.currency, expenseDate)
-    const amountInNOK =
-      rateData && expense.currency !== "NOK"
-        ? nokAmountFromExchangeRateData(expense.amount, rateData)
-        : expense.amount
-    totalAmount += amountInNOK
+    let amountInTarget: number | null
+    let exchangeRawLines: string[]
 
-    const amountText = formatCurrency(amountInNOK)
+    // Convert expense currency to payout currency
+    if (expense.currency === payoutCurrency) {
+      amountInTarget = expense.amount
+      exchangeRawLines = ["-"]
+    } else {
+      const conversion = await convertCurrency(
+        expense.amount,
+        expense.currency,
+        payoutCurrency,
+        expenseDate,
+      )
+      if (conversion) {
+        amountInTarget = conversion.amount
+        exchangeRawLines = [
+          `${formatCurrency(expense.amount)} ${expense.currency}`,
+          `1 ${expense.currency} = ${formatExchangeRate(conversion.rate, conversion.unitMultiplier)} ${payoutCurrency}`,
+          `Kursdato: ${formatDate(conversion.rateDate)}`,
+        ]
+      } else {
+        // Don't mix an unconverted amount into the payout-currency total
+        amountInTarget = null
+        exchangeRawLines = [
+          `${formatCurrency(expense.amount)} ${expense.currency}`,
+          "Kurs: ikke tilgjengelig",
+        ]
+      }
+    }
+    if (amountInTarget != null) {
+      totalAmount += amountInTarget
+    }
 
-    const exchangeRawLines =
-      expense.currency !== "NOK" && rateData
-        ? [
-            `${formatCurrency(expense.amount)} ${expense.currency}`,
-            `Kurs: ${formatExchangeRate(rateData.rate, rateData.unitMultiplier)} NOK per ${rateData.unitMultiplier} ${expense.currency}`,
-            `Kursdato: ${formatDate(rateData.rateDate)}`,
-          ]
-        : ["-"]
+    const amountText =
+      amountInTarget != null ? formatCurrency(amountInTarget) : "—"
 
     const descriptionLines = wrapToWidth(
       expense.description,
@@ -567,7 +590,7 @@ export async function generatePDF({
     color: gray,
   })
 
-  const formattedTotalAmount = formatCurrency(totalAmount)
+  const formattedTotalAmount = `${formatCurrency(totalAmount)} ${payoutCurrency}`
   const totalAmountWidth = font.widthOfTextAtSize(formattedTotalAmount, 12)
   const totalLabelWidth = font.widthOfTextAtSize("Total:", 12)
   const totalLabelSpacing = 10
