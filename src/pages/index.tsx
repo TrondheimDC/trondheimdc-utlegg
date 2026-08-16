@@ -452,6 +452,23 @@ export default function ExpensePage() {
 
   const residesInNorway = form.watch("residesInNorway")
   const targetCurrency = form.watch("targetCurrency") ?? "NOK"
+  const dirtyFields = form.formState.dirtyFields
+  const previousTargetCurrencyRef = React.useRef(targetCurrency)
+  React.useEffect(() => {
+    const previousTargetCurrency = previousTargetCurrencyRef.current
+    if (previousTargetCurrency === targetCurrency) return
+    previousTargetCurrencyRef.current = targetCurrency
+
+    // Follow the new payout currency only on pristine rows still on the old
+    // default. A dirty expense has been touched, so leave its currency alone.
+    form.getValues("expenses").forEach((expense, index) => {
+      if (dirtyFields.expenses?.[index]) return
+      if (expense.currency !== previousTargetCurrency) return
+      form.resetField(`expenses.${index}.currency`, {
+        defaultValue: targetCurrency,
+      })
+    })
+  }, [targetCurrency, form, dirtyFields])
   const targetEmail = "faktura@trondheimdc.no"
   const [hasCopiedEmail, setHasCopiedEmail] = useState(false)
 
