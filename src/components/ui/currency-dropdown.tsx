@@ -42,6 +42,7 @@ interface CurrencyDropdownProps {
   slim?: boolean
   name?: string
   "data-valid"?: boolean
+  "aria-required"?: boolean | "true" | "false"
 }
 
 const CurrencyDropdownComponent = (

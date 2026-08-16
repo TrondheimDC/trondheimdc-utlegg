@@ -48,6 +48,7 @@ interface CountryDropdownProps {
   name?: string
   autoComplete?: string
   enableAutofill?: boolean
+  "aria-required"?: boolean | "true" | "false"
 }
 
 const CountryDropdownComponent = (

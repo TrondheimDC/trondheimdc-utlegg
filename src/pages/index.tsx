@@ -311,6 +311,7 @@ function ExpenseAmountInput({
                   type="text"
                   inputMode="decimal"
                   autoComplete="off"
+                  required
                   {...field}
                   value={displayValue}
                   disabled={!selectedCurrencyCode}
@@ -469,8 +470,27 @@ export default function ExpensePage() {
       })
     })
   }, [targetCurrency, form, dirtyFields])
+  const watchedName = form.watch("name") ?? ""
+  const watchedExpenses = form.watch("expenses") ?? []
   const targetEmail = "faktura@trondheimdc.no"
   const [hasCopiedEmail, setHasCopiedEmail] = useState(false)
+  const emailDate =
+    watchedExpenses[0]?.date instanceof Date
+      ? watchedExpenses[0].date
+      : new Date()
+  const emailDateStr = emailDate.toLocaleDateString("sv")
+  const emailDescriptions = watchedExpenses
+    .map((expense) => expense.description)
+    .filter(Boolean)
+    .join(", ")
+  const mailtoHref = `mailto:${targetEmail}?subject=${encodeURIComponent(
+    t("expense.emailSubject", { date: emailDateStr, name: watchedName }),
+  )}&body=${encodeURIComponent(
+    t("expense.emailBody", {
+      descriptions: emailDescriptions,
+      name: watchedName,
+    }),
+  )}`
 
   const handleResidenceChange = (value: string) => {
     const isNorway = value === "norway"
@@ -623,14 +643,21 @@ export default function ExpensePage() {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          noValidate
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6"
+        >
           {/* Residence toggle */}
           <Tabs
             value={residesInNorway ? "norway" : "abroad"}
             onValueChange={handleResidenceChange}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList
+              className="grid w-full grid-cols-2"
+              aria-label={t("expense.residenceLabel")}
+            >
               <TabsTrigger value="norway">
                 {t("expense.residesInNorway")}
               </TabsTrigger>
@@ -675,6 +702,8 @@ export default function ExpensePage() {
                     <FormControl>
                       <Input
                         placeholder={t("expense.namePlaceholder")}
+                        autoComplete="name"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -692,6 +721,8 @@ export default function ExpensePage() {
                     <FormControl>
                       <Input
                         type="email"
+                        autoComplete="email"
+                        required
                         placeholder={t("expense.emailPlaceholder")}
                         {...field}
                       />
@@ -710,6 +741,8 @@ export default function ExpensePage() {
                     <FormControl>
                       <Input
                         placeholder={t("expense.addressPlaceholder")}
+                        autoComplete="street-address"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -728,6 +761,8 @@ export default function ExpensePage() {
                       <FormControl>
                         <Input
                           placeholder={t("expense.postalCodePlaceholder")}
+                          autoComplete="postal-code"
+                          required
                           {...field}
                           onChange={(e) => {
                             const value = residesInNorway
@@ -751,6 +786,8 @@ export default function ExpensePage() {
                       <FormControl>
                         <Input
                           placeholder={t("expense.cityPlaceholder")}
+                          autoComplete="address-level2"
+                          required
                           {...field}
                         />
                       </FormControl>
@@ -771,6 +808,8 @@ export default function ExpensePage() {
                         <CountryDropdown
                           {...field}
                           defaultValue={field.value}
+                          autoComplete="country-name"
+                          aria-required="true"
                           onChange={(country: Country) => {
                             form.setValue(field.name, country?.alpha3 || "")
                           }}
@@ -806,9 +845,10 @@ export default function ExpensePage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => remove(index)}
+                        aria-label={t("expense.removeExpense")}
                         className="gap-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </div>
                   )}
@@ -825,6 +865,7 @@ export default function ExpensePage() {
                         <FormControl>
                           <Input
                             {...field}
+                            required
                             placeholder={t("expense.descriptionPlaceholder")}
                           />
                         </FormControl>
@@ -845,6 +886,7 @@ export default function ExpensePage() {
                               <FormControl>
                                 <Button
                                   variant="outline"
+                                  aria-required="true"
                                   className={cn(
                                     "w-full bg-background pl-3 text-left font-normal",
                                     !field.value && "text-muted-foreground",
@@ -858,7 +900,10 @@ export default function ExpensePage() {
                                   ) : (
                                     <span>{t("expense.selectDate")}</span>
                                   )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  <CalendarIcon
+                                    className="ml-auto h-4 w-4 opacity-50"
+                                    aria-hidden="true"
+                                  />
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
@@ -909,6 +954,7 @@ export default function ExpensePage() {
                               onValueChange={field.onChange}
                               placeholder={t("expense.selectCurrency")}
                               currencies="custom"
+                              aria-required="true"
                             />
                           </FormControl>
                           <FormMessage />
@@ -949,6 +995,7 @@ export default function ExpensePage() {
                             }}
                             maxSize={10 * 1024 * 1024}
                             {...field}
+                            required
                             value={field.value?.size > 0 ? [field.value] : []}
                             onValueChange={(files) => {
                               const file = files?.[0]
@@ -982,7 +1029,7 @@ export default function ExpensePage() {
                   }
                   className="gap-2 border-dashed border-input text-muted-foreground hover:border-accent-foreground hover:bg-accent"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4" aria-hidden="true" />
                   {t("expense.addExpense")}
                 </Button>
               </div>
@@ -1002,12 +1049,8 @@ export default function ExpensePage() {
               asChild
               className="flex items-center gap-2 border-input text-foreground hover:bg-accent"
             >
-              <a
-                target="_blank"
-                href={`mailto:${targetEmail}?subject=${encodeURIComponent(`Utlegg - ${form.getValues("name")}`)}&body=${encodeURIComponent(`Hei,\n\nVedlagt er utleggsrapport.\n\nMed vennlig hilsen,\n${form.getValues("name")}`)}`}
-                rel="noopener"
-              >
-                <Mail className="h-4 w-4" />
+              <a target="_blank" href={mailtoHref} rel="noopener">
+                <Mail className="h-4 w-4" aria-hidden="true" />
                 {t("expense.sendEmail")}
               </a>
             </Button>
@@ -1025,9 +1068,9 @@ export default function ExpensePage() {
               }}
             >
               {hasCopiedEmail ? (
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <Copy className="h-4 w-4" />
+                <Copy className="h-4 w-4" aria-hidden="true" />
               )}
               {hasCopiedEmail
                 ? t("expense.emailCopied")
