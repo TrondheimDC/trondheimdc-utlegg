@@ -13,7 +13,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  type TranslatedErrorMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
@@ -35,14 +34,12 @@ type BankDetailsFormProps = {
   // biome-ignore lint/suspicious/noExplicitAny: generic form type is provided by caller
   form: UseFormReturn<any>
   t: (key: string, options?: Record<string, unknown>) => string
-  language: string
   isInternational: boolean
 }
 
 export function BankDetailsForm({
   form,
   t,
-  language,
   isInternational,
 }: BankDetailsFormProps) {
   const [skipValidation, setSkipValidation] = useState(false)

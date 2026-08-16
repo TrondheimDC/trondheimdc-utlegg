@@ -681,7 +681,6 @@ export default function ExpensePage() {
             <BankDetailsForm
               form={form}
               t={t}
-              language={i18n.language}
               isInternational={!residesInNorway}
             />
           </section>

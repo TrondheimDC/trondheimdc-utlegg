@@ -172,7 +172,7 @@ function CropDialog({
     }
   }, [file, showImage])
 
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+  function onImageLoad(_e: React.SyntheticEvent<HTMLImageElement>) {
     const crop = {
       unit: "%",
       width: 100,
@@ -624,7 +624,7 @@ export const FileUploader = React.forwardRef<HTMLDivElement, FileUploaderProps>(
         />
       </div>
     )
-  }
+  },
 )
 
 FileUploader.displayName = "FileUploader"
