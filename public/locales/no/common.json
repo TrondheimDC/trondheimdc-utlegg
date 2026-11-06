@@ -66,6 +66,43 @@
     "addExpense": "Legg til utgift",
     "removeExpense": "Fjern utgift",
     "description": "Beskrivelse",
+    "category": "Kategori",
+    "categoryPlaceholder": "Hva var utlegget til?",
+    "categoryGroups": {
+      "speaker": "Foredragsholder",
+      "association": "Foreningen",
+      "meetup": "Meetups"
+    },
+    "categories": {
+      "reise": {
+        "label": "Reise og transport",
+        "hint": "Fly, tog, taxi, buss, parkering"
+      },
+      "overnatting": {
+        "label": "Overnatting",
+        "hint": "Hotell og annen overnatting"
+      },
+      "servering": {
+        "label": "Mat og servering",
+        "hint": "Mat og drikke på møter"
+      },
+      "materiell": {
+        "label": "Materiell og utstyr",
+        "hint": "Teip, batterier, kabler, skjermer, t-skjorter, trykksaker"
+      },
+      "programvare": {
+        "label": "Programvare og abonnement",
+        "hint": "Sessionize, Figma, domener"
+      },
+      "meetup-stotte": {
+        "label": "Støtte til en meetup-gruppe",
+        "hint": "Lokale, mat, Meetup.com-abonnement"
+      },
+      "annet": {
+        "label": "Annet",
+        "hint": "Noe som ikke passer over"
+      }
+    },
     "amount": "Beløp (inkl. mva)",
     "exchangeRate": "1 {{sourceCurrency}} = {{rate}} {{targetCurrency}} ({{date}})",
     "youGetBack": "Du får tilbake {{amount}} {{currency}}",
@@ -75,8 +112,15 @@
     "attachment": "Bilag",
     "processing": "Behandler...",
     "generateReport": "Generer rapport",
+    "rememberMe": "Husk opplysningene mine",
+    "rememberMeHint": "Lagres bare i denne nettleseren. Ikke kryss av hvis andre har tilgang til enheten.",
+    "detailsRestored": "Opplysningene dine er fylt inn fra sist.",
+    "forgetMe": "Glem meg",
+    "pdfError": "Kunne ikke lage PDF-en. Prøv igjen, eller send oss bilagene på e-post.",
+    "pdfReceiptError": "Kunne ikke lese bilaget til utgift {{number}}. Prøv å laste det opp på nytt, for eksempel som bilde i stedet for PDF.",
     "sendEmail": "Send e-post",
     "emailSubject": "Utlegg {{date}} - {{name}}",
+    "emailSubjectWithId": "Utleggsrapport {{reportId}} - {{name}}",
     "emailBody": "Hei, jeg har gjort utlegg for {{descriptions}}.\n\nVedlagt er en PDF-fil med utleggene.\n\nMed vennlig hilsen,\n{{name}}",
     "copyEmail": "Kopier e-postadresse",
     "emailCopied": "Kopiert",
@@ -111,7 +155,9 @@
       "invalidSwift": "Ugyldig SWIFT/BIC-kode",
       "invalidIbanFormat": "Ugyldig format. Forventet IBAN-format.",
       "invalidIbanLength": "Feil lengde. Forventet {{expectedLength}} tegn for det valgte landets IBAN, fikk {{actualLength}}.",
-      "invalidIbanChecksum": "Ugyldig IBAN-sjekksum."
+      "invalidIbanChecksum": "Ugyldig IBAN-sjekksum.",
+      "categoryRequired": "Velg en kategori",
+      "descriptionTooLong": "Beskrivelsen kan være maks 120 tegn"
     }
   },
   "fileUploader": {
@@ -134,14 +180,22 @@
     "errors": {
       "singleFile": "Kan ikke laste opp mer enn 1 fil om gangen",
       "maxFiles": "Kan ikke laste opp mer enn {{count}} filer",
-      "fileRejected": "Filen {{fileName}} ble avvist"
+      "fileRejected": "Filen {{fileName}} ble avvist",
+      "heicFailed": "Kunne ikke konvertere HEIC-bildet {{fileName}}. Ta et skjermbilde av kvitteringen, eller eksporter den som JPEG."
     },
     "card": {
       "removeFile": "Fjern fil"
     },
     "preview": {
       "imageDescription": "Zoom og panorer for å se det vedlagte bildet nærmere.",
-      "pdfDescription": "Forhåndsvisning av den vedlagte PDF-en."
-    }
+      "pdfDescription": "Forhåndsvisning av den vedlagte PDF-en.",
+      "pdfThumbnail": "Forhåndsvisning av PDF",
+      "pdfPage": "Side {{page}} av {{total}}",
+      "previousPage": "Forrige side",
+      "nextPage": "Neste side",
+      "pdfLoading": "Laster forhåndsvisning…",
+      "pdfError": "Kunne ikke vise forhåndsvisning av denne PDF-en."
+    },
+    "converting": "Konverterer bildet…"
   }
 }

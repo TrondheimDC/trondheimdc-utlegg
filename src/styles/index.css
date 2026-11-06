@@ -1,3 +1,4 @@
+@import "./pdf-text-layer.css";
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -80,8 +81,10 @@
   --secondary-foreground: oklch(1.0000 0 0);
   --muted: oklch(0.3329 0 0);
   --muted-foreground: oklch(0.70 0 0);
-  --accent: oklch(0.6156 0.1468 30.0353);
-  --accent-foreground: oklch(1.0000 0 0);
+  /* Neutral, like light mode: it's the hover/highlight surface in menus and dropdowns,
+     and the orange it was gave white and muted text too little contrast. */
+  --accent: oklch(0.33 0 0);
+  --accent-foreground: oklch(0.9805 0.0108 234.8134);
   --destructive: oklch(0.7512 0.1502 29.3682);
   --destructive-foreground: oklch(1.0000 0 0);
   --border: oklch(0.3829 0 0);

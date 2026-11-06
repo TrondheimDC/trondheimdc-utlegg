@@ -28,6 +28,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   findCountryByCodeOrName,
@@ -43,26 +53,58 @@ import {
   formatExchangeRate,
 } from "@/lib/exchange-rates"
 import {
+  categoryGroups,
+  type ExpenseCategoryId,
+  lockedCategory,
+  type Purpose,
+  parseCategory,
+  parsePurpose,
+} from "@/lib/expense-categories"
+import {
   createExpenseSchemas,
+  DESCRIPTION_MAX_LENGTH,
   type ExpenseReportFormValues,
 } from "@/lib/expense-schema"
-import { generatePDF } from "@/lib/pdf"
+import { generatePDF, type PdfFonts, ReceiptError } from "@/lib/pdf"
+import {
+  forgetDetails,
+  pickDetails,
+  readRememberedDetails,
+  rememberDetails,
+} from "@/lib/remembered-details"
+import { createReportId, reportFilename } from "@/lib/report-naming"
 import { cn, formatCurrency } from "@/lib/utils"
 
-const LOGO_URL = "/img/logos/TDC_white.png"
-let cachedLogoBytes: ArrayBuffer | undefined | null = null
+let pdfFonts: Promise<PdfFonts | undefined> | undefined
 
-/** Fetches logo once per session for PDF generation; pdf-lib needs raw bytes, not a URL. */
-async function getCachedLogoBytes(): Promise<ArrayBuffer | undefined> {
-  if (cachedLogoBytes !== null) return cachedLogoBytes ?? undefined
-  try {
-    const res = await fetch(LOGO_URL)
-    if (res.ok) cachedLogoBytes = await res.arrayBuffer()
-    else cachedLogoBytes = undefined
-  } catch {
-    cachedLogoBytes = undefined
-  }
-  return cachedLogoBytes ?? undefined
+/**
+ * The TDC fonts for the PDF, fetched once per session. pdf-lib needs the font bytes;
+ * without them the PDF falls back to Helvetica, which can't draw names outside Latin-1.
+ */
+function loadPdfFonts(): Promise<PdfFonts | undefined> {
+  pdfFonts ??= (async () => {
+    try {
+      const [regular, semibold, display] = await Promise.all(
+        [
+          "/fonts/IBMPlexSans-Regular.ttf",
+          "/fonts/IBMPlexSans-SemiBold.ttf",
+          "/fonts/SpaceGrotesk-Bold.ttf",
+        ].map(async (url) => {
+          const res = await fetch(url)
+          if (!res.ok) throw new Error(`${url}: ${res.status}`)
+          return res.arrayBuffer()
+        }),
+      )
+      return regular && semibold && display
+        ? { regular, semibold, display }
+        : undefined
+    } catch (error) {
+      console.error("Could not load PDF fonts, using Helvetica:", error)
+      pdfFonts = undefined
+      return undefined
+    }
+  })()
+  return pdfFonts
 }
 
 function getString(
@@ -385,6 +427,17 @@ export default function ExpensePage() {
   type FormValues = z.infer<typeof formSchema>
 
   const [isLoading, setIsLoading] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
+  /** The last report made, so the e-mail subject names the same report as the file. */
+  const [lastReportId, setLastReportId] = useState<string | null>(null)
+  /** "Husk opplysningene mine": save the person's details when a report is made. */
+  const [rememberMe, setRememberMe] = useState(false)
+  /** The details were filled in from the last time. */
+  const [detailsRestored, setDetailsRestored] = useState(false)
+  /** Who the link is for (`?for=speaker|meetup|forening`); null shows every category. */
+  const [purpose, setPurpose] = useState<Purpose | null>(null)
+  /** The category the link settles (`?category=<id>`, or `?for=meetup`): the form doesn't ask. */
+  const [locked, setLocked] = useState<ExpenseCategoryId | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -415,6 +468,7 @@ export default function ExpensePage() {
       expenses: [
         {
           description: "",
+          category: "" as ExpenseCategoryId,
           amount: 0,
           currency: initialFormValues.targetCurrency || "NOK",
           date: new Date(),
@@ -428,12 +482,37 @@ export default function ExpensePage() {
     if (typeof window === "undefined") return
 
     const queryRecord = searchToQueryRecord(window.location.search)
-    if (!Object.keys(queryRecord).length) return
-
     const parsed = parseFormQueryParams(queryRecord)
 
     if (parsed.language && i18n.language !== parsed.language) {
       void i18n.changeLanguage(parsed.language)
+    }
+
+    const linkPurpose = parsePurpose(getString(queryRecord, "for"))
+    setPurpose(linkPurpose)
+    const linkCategory = lockedCategory(
+      linkPurpose,
+      parseCategory(getString(queryRecord, "category")),
+    )
+    setLocked(linkCategory)
+    if (linkCategory)
+      form.getValues("expenses").forEach((_, index) => {
+        form.setValue(`expenses.${index}.category`, linkCategory)
+      })
+
+    // A link that fills in the form wins over remembered details; ?lang, ?for and
+    // ?category don't count.
+    const linkFillsForm = Object.keys(queryRecord).some(
+      (key) => !["lang", "for", "category"].includes(key.toLowerCase()),
+    )
+    const remembered = readRememberedDetails()
+    if (remembered) setRememberMe(true)
+    if (!linkFillsForm) {
+      if (remembered) {
+        form.reset({ ...form.getValues(), ...remembered })
+        setDetailsRestored(true)
+      }
+      return
     }
 
     form.reset({
@@ -484,7 +563,12 @@ export default function ExpensePage() {
     .filter(Boolean)
     .join(", ")
   const mailtoHref = `mailto:${targetEmail}?subject=${encodeURIComponent(
-    t("expense.emailSubject", { date: emailDateStr, name: watchedName }),
+    lastReportId
+      ? t("expense.emailSubjectWithId", {
+          reportId: lastReportId,
+          name: watchedName,
+        })
+      : t("expense.emailSubject", { date: emailDateStr, name: watchedName }),
   )}&body=${encodeURIComponent(
     t("expense.emailBody", {
       descriptions: emailDescriptions,
@@ -525,8 +609,19 @@ export default function ExpensePage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [isDirty])
 
+  const forgetMe = () => {
+    forgetDetails()
+    setRememberMe(false)
+    setDetailsRestored(false)
+    form.reset({
+      ...form.getValues(),
+      ...pickDetails({ ...initialFormValues, bankAccountType: "checking" }),
+    })
+  }
+
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
+    setPdfError(null)
 
     const normalizedData: FormValues = {
       ...data,
@@ -536,7 +631,7 @@ export default function ExpensePage() {
     }
 
     try {
-      const logoPngBytes = await getCachedLogoBytes()
+      const fonts = await loadPdfFonts()
 
       // PDF country names are always in Norwegian
       const regionNames = new Intl.DisplayNames(["nb"], { type: "region" })
@@ -552,10 +647,12 @@ export default function ExpensePage() {
           "")
         : (normalizedData.bankCountry ?? "")
 
+      const reportId = createReportId()
       const expenseReport = await generatePDF({
         ...normalizedData,
+        reportId,
         validationSkipped: normalizedData.skipBankValidation ?? false,
-        logoPngBytes,
+        fonts,
         countryDisplayName,
         bankCountryDisplayName,
       })
@@ -567,23 +664,24 @@ export default function ExpensePage() {
       const link = document.createElement("a")
       link.href = url
 
-      const today = new Date()
-      const todayStr = today.toISOString().split("T")[0]
-      const sanitizedName = normalizedData.name
-        .replace(/[^a-zA-Z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .toLowerCase()
-
       link.setAttribute(
         "download",
-        `${todayStr}-${sanitizedName}-expense-report.pdf`,
+        reportFilename(reportId, normalizedData.name),
       )
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
+      setLastReportId(reportId)
+      if (rememberMe) rememberDetails(normalizedData)
+      else forgetDetails()
     } catch (error) {
       console.error("Error generating PDF:", error)
+      setPdfError(
+        error instanceof ReceiptError
+          ? t("expense.pdfReceiptError", { number: error.receipt })
+          : t("expense.pdfError"),
+      )
     } finally {
       setIsLoading(false)
     }
@@ -628,6 +726,11 @@ export default function ExpensePage() {
 
         URL.revokeObjectURL(img.src)
       }
+      // An image the browser can't decode: keep the original rather than hang.
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src)
+        resolve(file)
+      }
     })
   }
 
@@ -648,6 +751,21 @@ export default function ExpensePage() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-6"
         >
+          {detailsRestored && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-input bg-card px-4 py-3 text-sm text-muted-foreground">
+              <span>{t("expense.detailsRestored")}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={forgetMe}
+                className="text-foreground"
+              >
+                {t("expense.forgetMe")}
+              </Button>
+            </div>
+          )}
+
           {/* Residence toggle */}
           <Tabs
             value={residesInNorway ? "norway" : "abroad"}
@@ -851,7 +969,6 @@ export default function ExpensePage() {
                       </Button>
                     </div>
                   )}
-
                   <FormField
                     control={form.control}
                     name={`expenses.${index}.description`}
@@ -865,6 +982,7 @@ export default function ExpensePage() {
                           <Input
                             {...field}
                             required
+                            maxLength={DESCRIPTION_MAX_LENGTH}
                             placeholder={t("expense.descriptionPlaceholder")}
                           />
                         </FormControl>
@@ -872,6 +990,82 @@ export default function ExpensePage() {
                       </FormItem>
                     )}
                   />
+                  {/* The link settled the category: it's set, so no question to show. */}
+                  {!locked && (
+                    <FormField
+                      control={form.control}
+                      name={`expenses.${index}.category`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("expense.category")}</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value ?? ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger
+                                aria-required="true"
+                                className="w-full"
+                                onBlur={field.onBlur}
+                                ref={field.ref}
+                              >
+                                <SelectValue
+                                  placeholder={t("expense.categoryPlaceholder")}
+                                >
+                                  {/*
+                                    Only the name here; the hint is for the open list. Never
+                                    undefined: then Radix portals the item's text in instead.
+                                  */}
+                                  {field.value
+                                    ? t(
+                                        `expense.categories.${field.value}.label`,
+                                      )
+                                    : ""}
+                                </SelectValue>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categoryGroups(purpose).map(
+                                (group, groupIndex) => (
+                                  <React.Fragment
+                                    key={group.heading ?? group.ids[0]}
+                                  >
+                                    {groupIndex > 0 && <SelectSeparator />}
+                                    <SelectGroup>
+                                      {group.heading && (
+                                        <SelectLabel>
+                                          {t(
+                                            `expense.categoryGroups.${group.heading}`,
+                                          )}
+                                        </SelectLabel>
+                                      )}
+                                      {group.ids.map((id) => (
+                                        <SelectItem key={id} value={id}>
+                                          <span className="flex flex-col items-start">
+                                            <span>
+                                              {t(
+                                                `expense.categories.${id}.label`,
+                                              )}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {t(
+                                                `expense.categories.${id}.hint`,
+                                              )}
+                                            </span>
+                                          </span>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                  </React.Fragment>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-start">
                     <FormField
@@ -961,7 +1155,6 @@ export default function ExpensePage() {
                       )}
                     />
                   </div>
-
                   <FormField
                     control={form.control}
                     name={`expenses.${index}.attachment`}
@@ -989,8 +1182,9 @@ export default function ExpensePage() {
                               }
                             }}
                             accept={{
-                              "image/*": [],
-                              "application/pdf": [],
+                              // Extensions too: Windows gives HEIC files no MIME type.
+                              "image/*": [".heic", ".heif"],
+                              "application/pdf": [".pdf"],
                             }}
                             maxSize={10 * 1024 * 1024}
                             {...field}
@@ -1020,6 +1214,7 @@ export default function ExpensePage() {
                   onClick={() =>
                     append({
                       description: "",
+                      category: (locked ?? "") as ExpenseCategoryId,
                       amount: 0,
                       currency: targetCurrency,
                       date: new Date(),
@@ -1034,6 +1229,32 @@ export default function ExpensePage() {
               </div>
             )}
           </section>
+
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-input"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium text-foreground">
+                {t("expense.rememberMe")}
+              </span>
+              <span className="text-muted-foreground">
+                {t("expense.rememberMeHint")}
+              </span>
+            </span>
+          </label>
+
+          {pdfError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              {pdfError}
+            </p>
+          )}
 
           {/* Actions */}
           <div className="flex flex-col gap-3 sm:flex-row">

@@ -66,6 +66,43 @@
     "addExpense": "Add Expense",
     "removeExpense": "Remove expense",
     "description": "Description",
+    "category": "Category",
+    "categoryPlaceholder": "What was the expense for?",
+    "categoryGroups": {
+      "speaker": "Speaker",
+      "association": "The association",
+      "meetup": "Meetups"
+    },
+    "categories": {
+      "reise": {
+        "label": "Travel and transport",
+        "hint": "Flights, trains, taxi, buses, parking"
+      },
+      "overnatting": {
+        "label": "Accommodation",
+        "hint": "Hotels and other lodging"
+      },
+      "servering": {
+        "label": "Food and catering",
+        "hint": "Food and drinks at meetings"
+      },
+      "materiell": {
+        "label": "Supplies and equipment",
+        "hint": "Tape, batteries, cables, screens, t-shirts, printing"
+      },
+      "programvare": {
+        "label": "Software and subscriptions",
+        "hint": "Sessionize, Figma, domains"
+      },
+      "meetup-stotte": {
+        "label": "Support for a meetup group",
+        "hint": "Venue, food, Meetup.com subscription"
+      },
+      "annet": {
+        "label": "Other",
+        "hint": "Anything that doesn't fit above"
+      }
+    },
     "amount": "Amount (incl. VAT)",
     "exchangeRate": "1 {{sourceCurrency}} = {{rate}} {{targetCurrency}} ({{date}})",
     "youGetBack": "You will get back {{amount}} {{currency}}",
@@ -75,8 +112,15 @@
     "attachment": "Document",
     "processing": "Processing...",
     "generateReport": "Generate Report",
+    "rememberMe": "Remember my details",
+    "rememberMeHint": "Stored only in this browser. Leave unticked if others have access to this device.",
+    "detailsRestored": "Your details are filled in from last time.",
+    "forgetMe": "Forget me",
+    "pdfError": "Could not create the PDF. Try again, or e-mail us the receipts.",
+    "pdfReceiptError": "Could not read the receipt for expense {{number}}. Try uploading it again, for example as an image instead of a PDF.",
     "sendEmail": "Send Email",
     "emailSubject": "Expense {{date}} - {{name}}",
+    "emailSubjectWithId": "Expense report {{reportId}} - {{name}}",
     "emailBody": "Hi, I have expenses for {{descriptions}}.\n\nA PDF with the expenses is attached.\n\nKind regards,\n{{name}}",
     "copyEmail": "Copy email address",
     "emailCopied": "Copied",
@@ -111,7 +155,9 @@
       "invalidSwift": "Invalid SWIFT/BIC code",
       "invalidIbanFormat": "Invalid format. Expected IBAN format",
       "invalidIbanLength": "Wrong length. Expected {{expectedLength}} characters for selected country's IBAN, got {{actualLength}}.",
-      "invalidIbanChecksum": "Invalid IBAN checksum."
+      "invalidIbanChecksum": "Invalid IBAN checksum.",
+      "categoryRequired": "Choose a category",
+      "descriptionTooLong": "The description can be at most 120 characters"
     }
   },
   "fileUploader": {
@@ -134,14 +180,22 @@
     "errors": {
       "singleFile": "Cannot upload more than 1 file at a time",
       "maxFiles": "Cannot upload more than {{count}} files",
-      "fileRejected": "File {{fileName}} was rejected"
+      "fileRejected": "File {{fileName}} was rejected",
+      "heicFailed": "Could not convert the HEIC image {{fileName}}. Take a screenshot of the receipt, or export it as JPEG."
     },
     "card": {
       "removeFile": "Remove file"
     },
     "preview": {
       "imageDescription": "Zoom and pan to inspect the attached image.",
-      "pdfDescription": "Preview of the attached PDF."
-    }
+      "pdfDescription": "Preview of the attached PDF.",
+      "pdfThumbnail": "PDF preview",
+      "pdfPage": "Page {{page}} of {{total}}",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "pdfLoading": "Loading preview…",
+      "pdfError": "Could not show a preview of this PDF."
+    },
+    "converting": "Converting the image…"
   }
 }

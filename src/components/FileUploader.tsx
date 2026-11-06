@@ -1,6 +1,8 @@
 "use client"
 
 import {
+  ChevronLeft,
+  ChevronRight,
   FileText,
   Maximize,
   RotateCw,
@@ -17,6 +19,13 @@ import Dropzone, {
 } from "react-dropzone"
 import ReactCrop, { type Crop } from "react-image-crop"
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch"
+import {
+  PdfPageCanvas,
+  PdfPageView,
+  PdfViewport,
+  useElementSize,
+  usePdfDocument,
+} from "@/components/PdfPreview"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,6 +36,7 @@ import {
 } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { useControllableState } from "@/hooks/use-controllable-state"
+import { heicToJpeg, isHeicFile } from "@/lib/heic"
 import { cn, formatBytes } from "@/lib/utils"
 import "react-image-crop/dist/ReactCrop.css"
 import { useTranslation } from "react-i18next"
@@ -298,7 +308,7 @@ function CropDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>{t("fileUploader.crop.title")}</DialogTitle>
           {/*
@@ -446,6 +456,7 @@ export const FileUploader = React.forwardRef<HTMLDivElement, FileUploaderProps>(
     })
 
     const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+    const [isConverting, setIsConverting] = React.useState(false)
 
     const [cropDialogFile, setCropDialogFile] = React.useState<File | null>(
       null,
@@ -471,7 +482,7 @@ export const FileUploader = React.forwardRef<HTMLDivElement, FileUploaderProps>(
     )
 
     const onDrop = React.useCallback(
-      async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+      async (droppedFiles: File[], rejectedFiles: FileRejection[]) => {
         // Reported before any early return below, so a rejection is never hidden
         // by the crop dialog opening for an accepted file in the same drop.
         setErrorMessage(
@@ -482,7 +493,33 @@ export const FileUploader = React.forwardRef<HTMLDivElement, FileUploaderProps>(
             : null,
         )
 
-        if (acceptedFiles.length === 0) return
+        if (droppedFiles.length === 0) return
+
+        // HEIC (iPhone photos) becomes JPEG first, so the crop dialog can show it.
+        let acceptedFiles = droppedFiles
+        if (droppedFiles.some(isHeicFile)) {
+          setIsConverting(true)
+          try {
+            acceptedFiles = await Promise.all(
+              droppedFiles.map((file) =>
+                isHeicFile(file) ? heicToJpeg(file) : file,
+              ),
+            )
+          } catch (error) {
+            console.error("HEIC conversion failed:", error)
+            setErrorMessage(
+              t("fileUploader.errors.heicFailed", {
+                fileName: droppedFiles
+                  .filter(isHeicFile)
+                  .map((file) => file.name)
+                  .join(", "),
+              }),
+            )
+            return
+          } finally {
+            setIsConverting(false)
+          }
+        }
 
         if (!multiple && maxFileCount === 1 && acceptedFiles.length > 1) {
           setErrorMessage(t("fileUploader.errors.singleFile"))
@@ -600,6 +637,11 @@ export const FileUploader = React.forwardRef<HTMLDivElement, FileUploaderProps>(
             )}
           </Dropzone>
         )}
+        {isConverting ? (
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {t("fileUploader.converting")}
+          </p>
+        ) : null}
         {errorMessage ? (
           <p className="text-xs text-destructive">{errorMessage}</p>
         ) : null}
@@ -641,8 +683,10 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
   return (
     <div className="group relative flex items-center gap-2.5 rounded-md border bg-card p-2 transition-colors hover:bg-accent/50">
       <div className="relative shrink-0">
-        {file.type.startsWith("image/") || file.type === "application/pdf" ? (
+        {file.type.startsWith("image/") ? (
           <FilePreview file={file} />
+        ) : file.type === "application/pdf" ? (
+          <PdfFilePreview file={file} />
         ) : (
           <div className="bg-muted relative aspect-square size-14 shrink-0 overflow-hidden rounded-md border flex items-center justify-center">
             <FileText
@@ -688,7 +732,6 @@ interface FilePreviewProps {
 
 function FilePreview({ file }: FilePreviewProps) {
   const [preview, setPreview] = React.useState<string>("")
-  const [isPdfOpen, setIsPdfOpen] = React.useState(false)
   const [isImageOpen, setIsImageOpen] = React.useState(false)
   const { t } = useTranslation("common")
 
@@ -720,7 +763,7 @@ function FilePreview({ file }: FilePreviewProps) {
         </button>
 
         <Dialog open={isImageOpen} onOpenChange={setIsImageOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>{file.name}</DialogTitle>
               <DialogDescription className="sr-only">
@@ -811,45 +854,176 @@ function FilePreview({ file }: FilePreviewProps) {
     )
   }
 
-  if (file.type === "application/pdf") {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => setIsPdfOpen(true)}
-          className="bg-muted relative aspect-square size-14 shrink-0 overflow-hidden rounded-md border transition-opacity hover:opacity-90"
-        >
-          <iframe
-            src={preview}
-            title={file.name}
-            className="h-full w-full"
-            style={{ border: "none", pointerEvents: "none" }}
-          />
-        </button>
-
-        <Dialog open={isPdfOpen} onOpenChange={setIsPdfOpen}>
-          <DialogContent className="max-w-4xl h-[80vh] flex flex-col overflow-hidden">
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle>{file.name}</DialogTitle>
-              <DialogDescription className="sr-only">
-                {t("fileUploader.preview.pdfDescription")}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 min-h-0 w-full overflow-hidden">
-              <iframe
-                src={preview}
-                title={file.name}
-                className="h-full w-full"
-                style={{ border: "none" }}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      </>
-    )
-  }
-
   return (
     <FileText className="text-muted-foreground size-10" aria-hidden="true" />
+  )
+}
+
+interface PdfFilePreviewProps {
+  file: File
+}
+
+function PdfFilePreview({ file }: PdfFilePreviewProps) {
+  const { t } = useTranslation("common")
+  const [isOpen, setIsOpen] = React.useState(false)
+  const [page, setPage] = React.useState(1)
+  const [zoom, setZoom] = React.useState(1)
+  const { doc, numPages, status } = usePdfDocument(file)
+  const [viewportRef, viewportSize] = useElementSize()
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="bg-muted relative aspect-square size-14 shrink-0 overflow-hidden rounded-md border transition-opacity hover:opacity-90 flex items-center justify-center"
+      >
+        {status === "ready" ? (
+          <PdfPageCanvas
+            doc={doc}
+            pageNumber={1}
+            renderWidth={168}
+            className="h-full w-full object-cover"
+            label={t("fileUploader.preview.pdfThumbnail")}
+          />
+        ) : (
+          <FileText
+            className="text-muted-foreground size-5"
+            aria-hidden="true"
+          />
+        )}
+      </button>
+
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setPage(1)
+            setZoom(1)
+          }
+          setIsOpen(open)
+        }}
+      >
+        <DialogContent className="sm:max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>{file.name}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("fileUploader.preview.pdfDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div ref={viewportRef} className="relative flex-1 min-h-0 w-full">
+            {status === "ready" ? (
+              <>
+                {/*
+                  Scrolls rather than drag-pans: the page carries a pdf.js text
+                  layer, and intercepting drag to pan would make the text
+                  impossible to select.
+                */}
+                <PdfViewport zoom={zoom} onZoomChange={setZoom}>
+                  <PdfPageView
+                    doc={doc}
+                    pageNumber={page}
+                    fitWidth={viewportSize.width}
+                    fitHeight={viewportSize.height}
+                    zoom={zoom}
+                    label={t("fileUploader.preview.pdfPage", {
+                      page,
+                      total: numPages,
+                    })}
+                  />
+                </PdfViewport>
+                <div className="bg-background/80 absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-lg px-3 py-2 backdrop-blur z-10 sm:gap-4 sm:px-4">
+                  {numPages > 1 && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        disabled={page <= 1}
+                        onClick={() => setPage((current) => current - 1)}
+                      >
+                        <ChevronLeft className="size-4" />
+                        <span className="sr-only">
+                          {t("fileUploader.preview.previousPage")}
+                        </span>
+                      </Button>
+                      <span className="text-muted-foreground text-xs tabular-nums whitespace-nowrap">
+                        {t("fileUploader.preview.pdfPage", {
+                          page,
+                          total: numPages,
+                        })}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        disabled={page >= numPages}
+                        onClick={() => setPage((current) => current + 1)}
+                      >
+                        <ChevronRight className="size-4" />
+                        <span className="sr-only">
+                          {t("fileUploader.preview.nextPage")}
+                        </span>
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    disabled={zoom <= 1}
+                    onClick={() =>
+                      setZoom((current) => Math.max(1, current / 1.5))
+                    }
+                  >
+                    <ZoomOut className="size-4" />
+                    <span className="sr-only">
+                      {t("fileUploader.crop.zoomOut")}
+                    </span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    disabled={zoom === 1}
+                    onClick={() => setZoom(1)}
+                  >
+                    <Maximize className="size-4" />
+                    <span className="sr-only">
+                      {t("fileUploader.crop.resetZoom")}
+                    </span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    disabled={zoom >= 4}
+                    onClick={() =>
+                      setZoom((current) => Math.min(4, current * 1.5))
+                    }
+                  >
+                    <ZoomIn className="size-4" />
+                    <span className="sr-only">
+                      {t("fileUploader.crop.zoomIn")}
+                    </span>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground absolute inset-0 flex items-center justify-center text-sm">
+                {status === "error"
+                  ? t("fileUploader.preview.pdfError")
+                  : t("fileUploader.preview.pdfLoading")}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

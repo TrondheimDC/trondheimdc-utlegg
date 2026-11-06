@@ -6,6 +6,10 @@ import {
   validateIBAN,
   validateNorwegianBBAN,
 } from "@/lib/banking"
+import { EXPENSE_CATEGORY_IDS } from "@/lib/expense-categories"
+
+/** Long enough to say what, where and why; short enough for the PDF table. */
+export const DESCRIPTION_MAX_LENGTH = 120
 
 export const createExpenseSchemas = () => {
   const expenseItemSchema = z.object({
@@ -14,7 +18,12 @@ export const createExpenseSchemas = () => {
         required_error: "errors.descriptionRequired",
         invalid_type_error: "errors.descriptionRequired",
       })
-      .min(2, "errors.descriptionRequired"),
+      .trim()
+      .min(2, "errors.descriptionRequired")
+      .max(DESCRIPTION_MAX_LENGTH, "errors.descriptionTooLong"),
+    category: z.enum(EXPENSE_CATEGORY_IDS, {
+      errorMap: () => ({ message: "errors.categoryRequired" }),
+    }),
     amount: z
       .number({
         required_error: "errors.amountPositive",
