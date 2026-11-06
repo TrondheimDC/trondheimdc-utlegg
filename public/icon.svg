@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- Source: public/icon.svg. Edit that file, then run `node scripts/build-icons.mjs`. -->
+  <rect width="1024" height="1024" rx="205" fill="#0f0f0f"/>
+  <!-- A receipt (kvittering) with a torn zigzag edge: what you hand in for an utlegg -->
+  <path fill="#9bf7a9" d="M260 152h504a48 48 0 0 1 48 48V792 L774.5 848 L737 792 L699.5 848 L662 792 L624.5 848 L587 792 L549.5 848 L512 792 L474.5 848 L437 792 L399.5 848 L362 792 L324.5 848 L287 792 L249.5 848 L212 792 V200a48 48 0 0 1 48-48Z"/>
+  <!-- TDC wordmark (as in regnskap, sales and video) as the shop name -->
+  <g fill="#0f0f0f" transform="translate(313.6 208) scale(1.6)">
+    <path d="M10.0986 17.333H0L0 0L39.8145 0V17.333H29.7178V52H10.0986V17.333Z"/>
+    <path transform="translate(47.09 0)" d="M153.732 34.667C153.732 44.2406 145.983 52 136.422 52H0L0 0L136.422 0C145.983 0 153.732 7.75938 153.732 17.333V34.667Z"/>
+    <path transform="translate(208.1 0)" d="M39.8145 17.333H19.9072V34.667H39.8145V52H17.3105C7.74943 52 0.000113284 44.2407 0 34.667L0 17.333C0.000185034 7.75938 7.74948 0 17.3105 0L39.8145 0V17.333Z"/>
+  </g>
+  <g fill="#0f0f0f">
+    <!-- Line items, amounts right-aligned -->
+    <path d="M272 372h240v44H272ZM632 372h120v44H632ZM272 460h184v44H272ZM672 460h80v44H672Z"/>
+    <!-- Rule, then the total you get back -->
+    <path d="M272 556h480v18H272Z"/>
+    <path d="M272 618h168v72H272ZM552 618h200v72H552Z"/>
+  </g>
+</svg>
